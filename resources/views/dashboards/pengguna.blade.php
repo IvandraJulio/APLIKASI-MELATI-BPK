@@ -70,7 +70,7 @@
                                   x-html="formatMarkdown(msg.text)"></div>
 
                              <!-- Related FAQ Recommendation Button for Bot Response -->
-                             <template x-if="msg.sender === 'bot' && msg.recommendation">
+                             <template x-if="shouldShowFaqButton(msg)">
                                  <div class="mt-1 pb-1">
                                      <a :href="getFaqLink(msg.recommendation)" class="inline-flex items-center gap-1.5 px-4.5 py-2.5 bg-[#b26d27] hover:bg-[#9b5a1b] text-white text-[11px] font-bold rounded-xl transition-all shadow-xs cursor-pointer">
                                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-white"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
@@ -650,6 +650,15 @@
                 return this.chatMessages.filter(m => m.sender === 'bot' && m.id !== 'welcome').length;
             },
 
+            shouldShowFaqButton(msg) {
+                if (msg.sender !== 'bot' || !msg.recommendation) {
+                    return false;
+                }
+                const solvingMessages = this.chatMessages.filter(m => m.sender === 'bot' && m.recommendation);
+                const index = solvingMessages.findIndex(m => m.id === msg.id);
+                return index >= 0 && index < 2;
+            },
+
             formatTime(seconds) {
                 const mins = Math.floor(seconds / 60);
                 const secs = seconds % 60;
@@ -964,7 +973,7 @@
                     { keywords: ["email", "email dinas", "email bpk", "buat email"], category: "Layanan Identitas", sub: "Layanan Email", service: "Pembuatan Email Baru @bpk.go.id", hint: "Silakan hubungi Administrator untuk pembuatan email baru BPK." },
                     { keywords: ["email penuh", "kuota email", "storage email"], category: "Layanan Identitas", sub: "Layanan Email", service: "Masalah Kuota Email Penuh", hint: "Silakan buka webmail BPK, pastikan folder kiriman/sampah dibersihkan untuk melegakan kapasitas kotak masuk." },
                     { keywords: ["laptop lambat", "laptop lemot", "notebook", "upgrade ram", "perbaikan laptop"], category: "Layanan Perangkat", sub: "Pemeliharaan Perangkat", service: "Perbaikan Kerusakan Fisik Laptop Dinas", hint: "Unggah foto fisik laptop/bukti penyerahan ke Biro TI jika memerlukan perbaikan fisik." },
-                    { keywords: ["router", "router rusak", "access point", "modem jaringan"], category: "Layanan Teknologi", sub: "Layanan Internet", service: "Pemasangan perangkat koneksi internet", hint: "Unggah foto fisik perangkat router/modem yang bermasalah untuk memverifikasi kerusakan." },
+                    { keywords: ["router", "router rusak", "modem jaringan"], category: "Layanan Teknologi", sub: "Layanan Internet", service: "Pemasangan perangkat koneksi internet", hint: "Unggah foto fisik perangkat router/modem yang bermasalah untuk memverifikasi kerusakan." },
                     { keywords: ["proyektor", "projector", "proyektor buram", "kabel hdmi proyektor"], category: "Layanan Perangkat", sub: "Peminjaman Perangkat", service: "Peminjaman Projector / Proyektor", hint: "Unggah foto proyektor/perangkat yang berkendala jika memerlukan perbaikan/peminjaman baru." },
                     { keywords: ["mikrofon", "mic rapat", "sound system", "mikrofon konferensi"], category: "Layanan Perangkat", sub: "Peminjaman Perangkat", service: "Peminjaman Sound System", hint: "Unggah foto fisik mikrofon/sound system yang mengalami kendala untuk verifikasi fisik." },
                     { keywords: ["smartboard", "layar interaktif", "touchscreen rapat", "display interaktif"], category: "Layanan Perangkat", sub: "Pemeliharaan Perangkat", service: "Pemeliharaan Perangkat", hint: "Unggah foto layar interaktif/smartboard yang mengalami kendala teknis." },
@@ -994,7 +1003,66 @@
                 if (maxScore > 0 && bestRule) {
                     const confidence = maxScore >= 2 ? "Tinggi" : "Sedang";
 
-                    if (this.getBotResponseCount() < 5) {
+                    // Special location check for Wi-Fi configurations
+                    let isWifi = bestRule.service === 'Pengaturan konfigurasi Wifi Biro';
+                    if (isWifi) {
+                        const wifiBotMessages = this.chatMessages.filter(m => m.sender === 'bot' && m.recommendation && m.recommendation.service === 'Pengaturan konfigurasi Wifi Biro');
+                        
+                        if (wifiBotMessages.length === 0) {
+                            // LANGKAH 1: Solving pertama (troubleshooting tips)
+                            this.chatMessages.push({
+                                id: 'bot-' + Date.now(),
+                                sender: 'bot',
+                                text: `[Offline Fallback] Masalah Anda terdeteksi berkaitan dengan ${bestRule.service}. Tips Solusi: ${bestRule.hint} Apakah kendala Anda sudah teratasi?`,
+                                recommendation: {
+                                    category: bestRule.category,
+                                    sub: bestRule.sub,
+                                    service: bestRule.service,
+                                    confidence: confidence
+                                },
+                                showConfirmation: false,
+                                confirmed: false
+                            });
+                        } else {
+                            // LANGKAH 2 & 3: Check if location is provided in chat history
+                            const lowerChat = this.chatMessages.map(m => m.text.toLowerCase()).join(' ');
+                            const hasMenara = lowerChat.includes('menara');
+                            const hasLantai = lowerChat.includes('lantai') || /\blt\s*\d+/i.test(lowerChat) || /\bfloor\s*\d+/i.test(lowerChat);
+                            const hasLocation = hasMenara && hasLantai;
+
+                            if (!hasLocation) {
+                                // LANGKAH 2: Tanya lokasi (menara & lantai)
+                                this.chatMessages.push({
+                                    id: 'bot-' + Date.now(),
+                                    sender: 'bot',
+                                    text: '[Offline Fallback] Mohon maaf atas ketidaknyamanan Anda. Sebelum kami membuatkan tiket bantuan untuk perbaikan koneksi Wi-Fi Anda, mohon informasikan terlebih dahulu lokasi Anda saat ini (menara mana dan lantai berapa)?',
+                                    recommendation: {
+                                        category: bestRule.category,
+                                        sub: bestRule.sub,
+                                        service: bestRule.service,
+                                        confidence: confidence
+                                    },
+                                    showConfirmation: false,
+                                    confirmed: false
+                                });
+                            } else {
+                                // LANGKAH 3: Penawaran tiket (location is provided)
+                                this.chatMessages.push({
+                                    id: 'bot-' + Date.now(),
+                                    sender: 'bot',
+                                    text: '[Offline Fallback] Baik, terima kasih atas informasi lokasinya. Saya menemukan rekomendasi layanan yang sesuai untuk kendala Anda.',
+                                    recommendation: {
+                                        category: bestRule.category,
+                                        sub: bestRule.sub,
+                                        service: bestRule.service,
+                                        confidence: confidence
+                                    },
+                                    showConfirmation: true,
+                                    confirmed: false
+                                });
+                            }
+                        }
+                    } else if (this.getBotResponseCount() < 5) {
                         // Under 6th bot bubble: Only give troubleshooting tips/solving help
                         this.chatMessages.push({
                             id: 'bot-' + Date.now(),

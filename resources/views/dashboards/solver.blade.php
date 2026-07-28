@@ -5,7 +5,10 @@
 @section('content')
 @php
     $solver = Auth::user();
-    $assignedToday = \App\Models\Ticket::where('solverId', $solver->id)
+    $assignedToday = \App\Models\Ticket::where(function($q) use ($solver) {
+            $q->where('solverId', $solver->id)
+              ->orWhere('solver2Id', $solver->id);
+        })
         ->whereIn('status', ['Ditugaskan', 'Dikerjakan'])
         ->count();
     
@@ -43,7 +46,7 @@
                 <button @click="activeTab = 'aktif'; selectedId = null"
                         class="flex-1 py-2 text-center text-[10px] md:text-xs font-bold rounded-lg transition-all cursor-pointer"
                         :class="activeTab === 'aktif' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'">
-                    Tugas Aktif (<span x-text="tickets.filter(t => t.solverId === '{{ Auth::id() }}' && (t.status === 'Ditugaskan' || t.status === 'Dikerjakan')).length"></span>)
+                    Tugas Aktif (<span x-text="tickets.filter(t => (t.solverId === '{{ Auth::id() }}' || t.solver2Id === '{{ Auth::id() }}') && (t.status === 'Ditugaskan' || t.status === 'Dikerjakan')).length"></span>)
                 </button>
                 <button @click="activeTab = 'bisa_diambil'; selectedId = null"
                         class="flex-1 py-2 text-center text-[10px] md:text-xs font-bold rounded-lg transition-all cursor-pointer"
@@ -53,7 +56,7 @@
                 <button @click="activeTab = 'selesai'; selectedId = null"
                         class="flex-1 py-2 text-center text-[10px] md:text-xs font-bold rounded-lg transition-all cursor-pointer"
                         :class="activeTab === 'selesai' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'">
-                    Selesai (<span x-text="tickets.filter(t => (t.comments && t.comments.some(c => c.authorId === '{{ Auth::id() }}' && c.type === 'penyelesaian')) || (t.solverId === '{{ Auth::id() }}' && t.status === 'Selesai')).length"></span>)
+                    Selesai (<span x-text="tickets.filter(t => (t.comments && t.comments.some(c => c.authorId === '{{ Auth::id() }}' && c.type === 'penyelesaian')) || ((t.solverId === '{{ Auth::id() }}' || t.solver2Id === '{{ Auth::id() }}') && t.status === 'Selesai')).length"></span>)
                 </button>
             </div>
         </div>
@@ -397,12 +400,12 @@
                 return this.tickets.filter(t => {
                     let tabMatches = false;
                     if (this.activeTab === 'aktif') {
-                        tabMatches = t.solverId === me && (t.status === 'Ditugaskan' || t.status === 'Dikerjakan');
+                        tabMatches = (t.solverId === me || t.solver2Id === me) && (t.status === 'Ditugaskan' || t.status === 'Dikerjakan');
                     } else if (this.activeTab === 'bisa_diambil') {
                         tabMatches = t.kasubbagId === '{{ Auth::user()->subbagId }}' && !t.solverId && t.status !== 'Selesai' && t.status !== 'Kembalikan tiket ke operator';
                     } else { // selesai
                         const completedByMe = t.comments && t.comments.some(c => c.authorId === me && c.type === 'penyelesaian');
-                        tabMatches = completedByMe || (t.solverId === me && t.status === 'Selesai');
+                        tabMatches = completedByMe || ((t.solverId === me || t.solver2Id === me) && t.status === 'Selesai');
                     }
 
                     if (!tabMatches) return false;
@@ -566,6 +569,8 @@
                             status: 'Dieskalasi',
                             solverId: '',
                             solverName: '',
+                            solver2Id: null,
+                            solver2Name: null,
                             comment: {
                                 text: `Tiket dieskalasi kembali ke Kasubbag oleh Solver ${meName}. Alasan: ${this.escalateReason.trim()}`,
                                 type: 'eskalasi'

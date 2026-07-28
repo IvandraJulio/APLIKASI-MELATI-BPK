@@ -553,12 +553,37 @@ class DashboardController extends Controller
                     'message' => "Pesan baru dari {$user->name} pada tiket {$ticket->id}: \"{$shortText}\"",
                 ]);
             }
-            if ($user->id === $ticket->pengirimId && !empty($ticket->solverId) && $ticket->solverId !== $user->id) {
+            if ($user->id === $ticket->pengirimId) {
+                if (!empty($ticket->solverId)) {
+                    Notification::create([
+                        'user_id' => $ticket->solverId,
+                        'ticket_id' => $ticket->id,
+                        'title' => 'Pesan Chat Baru',
+                        'message' => "Pesan baru dari Pelapor ({$user->name}) pada tiket {$ticket->id}: \"{$shortText}\"",
+                    ]);
+                }
+                if (!empty($ticket->solver2Id)) {
+                    Notification::create([
+                        'user_id' => $ticket->solver2Id,
+                        'ticket_id' => $ticket->id,
+                        'title' => 'Pesan Chat Baru',
+                        'message' => "Pesan baru dari Pelapor ({$user->name}) pada tiket {$ticket->id}: \"{$shortText}\"",
+                    ]);
+                }
+            }
+            if ($user->id === $ticket->solverId && !empty($ticket->solver2Id)) {
+                Notification::create([
+                    'user_id' => $ticket->solver2Id,
+                    'ticket_id' => $ticket->id,
+                    'title' => 'Pesan Chat Baru (Rekan Solver)',
+                    'message' => "Rekan Solver Anda ({$user->name}) mengirim pesan pada tiket {$ticket->id}: \"{$shortText}\"",
+                ]);
+            } elseif ($user->id === $ticket->solver2Id && !empty($ticket->solverId)) {
                 Notification::create([
                     'user_id' => $ticket->solverId,
                     'ticket_id' => $ticket->id,
-                    'title' => 'Pesan Chat Baru',
-                    'message' => "Pesan baru dari Pelapor ({$user->name}) pada tiket {$ticket->id}: \"{$shortText}\"",
+                    'title' => 'Pesan Chat Baru (Rekan Solver)',
+                    'message' => "Rekan Solver Anda ({$user->name}) mengirim pesan pada tiket {$ticket->id}: \"{$shortText}\"",
                 ]);
             }
         }

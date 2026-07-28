@@ -6,7 +6,10 @@
 @php
     $defaultSolverId = '';
     foreach($solvers as $s) {
-        $count = \App\Models\Ticket::where('solverId', $s->id)
+        $count = \App\Models\Ticket::where(function($q) use ($s) {
+                $q->where('solverId', $s->id)
+                  ->orWhere('solver2Id', $s->id);
+            })
             ->whereIn('status', ['Ditugaskan', 'Dikerjakan'])
             ->count();
         if ($count < 6) {

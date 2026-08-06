@@ -84,7 +84,15 @@
                             <h2 class="text-base font-bold text-gray-800 font-display mt-0.5" x-text="getSelectedTicket().layanan"></h2>
                             <p class="text-[11px] text-gray-400 mt-1" x-text="'ID: ' + getSelectedTicket().id + ' | Pelapor: ' + getSelectedTicket().pengirimName"></p>
                         </div>
-                        <span class="status-badge" :class="getStatusBadgeClass(getSelectedTicket().status)" x-text="getSelectedTicket().status === 'Kembalikan tiket ke operator' ? 'Dikembalikan' : (getSelectedTicket().status === 'Pending' ? 'Pending / New' : getSelectedTicket().status)"></span>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <template x-if="canReopen(getSelectedTicket())">
+                                <button @click="reopenTicket(getSelectedTicket().id)" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
+                                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                    <span>Buka Kembali Tiket</span>
+                                </button>
+                            </template>
+                            <span class="status-badge" :class="getStatusBadgeClass(getSelectedTicket().status)" x-text="getSelectedTicket().status === 'Kembalikan tiket ke operator' ? 'Dikembalikan' : (getSelectedTicket().status === 'Pending' ? 'Pending / New' : getSelectedTicket().status)"></span>
+                        </div>
                     </div>
                 </div>
 
@@ -475,6 +483,54 @@
                     lucide.createIcons();
                     this.scrollComments();
                 });
+            },
+
+            canReopen(t) {
+                if (!t || t.status !== 'Selesai') return false;
+                
+                let completedTime = null;
+                if (t.tanggalSelesai) {
+                    completedTime = new Date(t.tanggalSelesai.replace(' ', 'T')).getTime();
+                }
+                if (!completedTime || isNaN(completedTime)) {
+                    if (t.tanggalUpdate) {
+                        completedTime = new Date(t.tanggalUpdate.replace(' ', 'T')).getTime();
+                    }
+                }
+                if (!completedTime || isNaN(completedTime)) return false;
+
+                const now = Date.now();
+                const elapsedMs = now - completedTime;
+                const hours24Ms = 24 * 60 * 60 * 1000;
+
+                return elapsedMs >= 0 && elapsedMs <= hours24Ms;
+            },
+
+            async reopenTicket(id) {
+                if (!confirm('Apakah Anda yakin ingin membuka kembali tiket ini?')) return;
+                
+                try {
+                    const response = await fetch(`/api/tickets/${id}/actions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            action: 'reopen'
+                        })
+                    });
+
+                    const res = await response.json();
+                    if (response.ok && res.success) {
+                        alert('Tiket berhasil dibuka kembali!');
+                        await this.fetchTickets();
+                    } else {
+                        alert(res.error || 'Gagal membuka kembali tiket.');
+                    }
+                } catch (e) {
+                    alert('Terjadi kesalahan jaringan.');
+                }
             },
 
             getStatusBadgeClass(status) {

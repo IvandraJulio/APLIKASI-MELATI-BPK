@@ -302,6 +302,20 @@ class DashboardController extends Controller
 
         // Handle Reopen Ticket Action
         if ($request->action === 'reopen' || $request->status === 'reopen') {
+            $user = Auth::user();
+            $userRole = $user->role;
+
+            // Authorization checks
+            if ($userRole === 'pengguna' && $ticket->pengirimId !== $user->id) {
+                return response()->json(['error' => 'Anda tidak memiliki hak untuk membuka kembali tiket ini.'], 403);
+            }
+            if ($userRole === 'kasubbag' && $ticket->kasubbagId !== $user->subbagId) {
+                return response()->json(['error' => 'Anda hanya dapat membuka kembali tiket di sub bagian Anda sendiri.'], 403);
+            }
+            if ($userRole === 'solver') {
+                return response()->json(['error' => 'Solver tidak memiliki hak untuk membuka kembali tiket.'], 403);
+            }
+
             if ($ticket->status !== 'Selesai') {
                 return response()->json(['error' => 'Hanya tiket berstatus Selesai yang dapat dibuka kembali.'], 400);
             }
@@ -326,13 +340,16 @@ class DashboardController extends Controller
                 'tanggalUpdate' => $now,
             ]);
 
+            $roleDisplay = $userRole === 'pengguna' ? 'Pelapor' : ($userRole === 'kasubbag' ? 'Kasubbag TI' : ($userRole === 'operator' ? 'Operator Biro TI' : 'Solver TI'));
+            $roleDisplayLower = $userRole === 'pengguna' ? 'pelapor' : ($userRole === 'kasubbag' ? 'kasubbag' : ($userRole === 'operator' ? 'operator' : 'solver'));
+
             Comment::create([
                 'id' => 'cmt-' . microtime(true),
                 'ticketId' => $ticket->id,
-                'authorId' => Auth::id(),
-                'authorName' => Auth::user()->name,
-                'authorRole' => Auth::user()->role,
-                'text' => 'Tiket dibuka kembali (reopened) oleh pelapor.',
+                'authorId' => $user->id,
+                'authorName' => $user->name,
+                'authorRole' => $user->role,
+                'text' => "Tiket dibuka kembali (reopened) oleh {$roleDisplayLower} ({$user->name}).",
                 'timestamp' => $now,
                 'type' => 'tindaklanjuti',
             ]);
@@ -342,17 +359,19 @@ class DashboardController extends Controller
                     'user_id' => $ticket->solverId,
                     'ticket_id' => $ticket->id,
                     'title' => 'Tiket Dibuka Kembali',
-                    'message' => "Pelapor telah membuka kembali tiket {$ticket->id} ({$ticket->layanan}).",
+                    'message' => "{$roleDisplay} ({$user->name}) telah membuka kembali tiket {$ticket->id} ({$ticket->layanan}).",
                 ]);
             } elseif (!empty($ticket->kasubbagId)) {
                 $kasubbagUsers = User::where('role', 'kasubbag')->where('subbagId', $ticket->kasubbagId)->get();
                 foreach ($kasubbagUsers as $kb) {
-                    Notification::create([
-                        'user_id' => $kb->id,
-                        'ticket_id' => $ticket->id,
-                        'title' => 'Tiket Dibuka Kembali',
-                        'message' => "Pelapor telah membuka kembali tiket {$ticket->id} ({$ticket->layanan}).",
-                    ]);
+                    if ($kb->id !== $user->id) {
+                        Notification::create([
+                            'user_id' => $kb->id,
+                            'ticket_id' => $ticket->id,
+                            'title' => 'Tiket Dibuka Kembali',
+                            'message' => "{$roleDisplay} ({$user->name}) telah membuka kembali tiket {$ticket->id} ({$ticket->layanan}).",
+                        ]);
+                    }
                 }
             }
 

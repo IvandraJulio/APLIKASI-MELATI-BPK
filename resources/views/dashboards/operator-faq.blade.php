@@ -13,10 +13,16 @@
             <div class="p-4 border-b border-[#e2e6ea] space-y-3 shrink-0">
                 <div class="flex items-center justify-between gap-4">
                     <h3 class="text-sm font-bold text-gray-800 font-display">Daftar Artikel FAQ</h3>
-                    <button type="button" @click="openCreateModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#b26d27] hover:bg-[#9b5a1b] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer">
-                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                        <span>Tambah</span>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <a href="/api/operator/dataset/export" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer no-underline">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                            <span>Dataset AI</span>
+                        </a>
+                        <button type="button" @click="openCreateModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#b26d27] hover:bg-[#9b5a1b] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Tambah</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Search Input -->

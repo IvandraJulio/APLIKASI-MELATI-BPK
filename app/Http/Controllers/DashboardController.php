@@ -506,6 +506,10 @@ class DashboardController extends Controller
             }
         }
 
+        if ($newStatus === 'Selesai' && $oldStatus !== 'Selesai') {
+            $this->checkAndGenerateFaq($ticket);
+        }
+
         return response()->json(['success' => true]);
     }
 
@@ -1065,5 +1069,155 @@ Format respons Anda harus SELALU berupa objek JSON yang valid dengan struktur be
             'success' => true,
             'message' => 'Artikel berhasil dihapus.'
         ]);
+    }
+
+    /**
+     * Export completed tickets dataset to JSONL
+     */
+    public function exportDatasetApi()
+    {
+        $tickets = Ticket::where('status', 'Selesai')->get();
+        $content = "";
+        foreach ($tickets as $t) {
+            $prompt = "Keluhan: " . str_replace(["\r", "\n"], " ", $t->detail);
+            $completion = "Solusi: " . str_replace(["\r", "\n"], " ", $t->catatanKasubbag ?: 'Diselesaikan oleh solver.');
+            $line = json_encode([
+                'prompt' => $prompt,
+                'completion' => $completion
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            $content .= $line . "\n";
+        }
+
+        return response($content)
+            ->header('Content-Type', 'application/x-jsonlines')
+            ->header('Content-Disposition', 'attachment; filename="dataset-ai.jsonl"');
+    }
+
+    /**
+     * Check if 10 tickets for the same service are resolved, and generate an FAQ article via Gemini
+     */
+    protected function checkAndGenerateFaq(Ticket $ticket)
+    {
+        $unprocessedTickets = Ticket::where('status', 'Selesai')
+            ->where('layananKategori', $ticket->layananKategori)
+            ->where('layananSub', $ticket->layananSub)
+            ->where('layanan', $ticket->layanan)
+            ->where('is_faq_processed', false)
+            ->get();
+
+        if ($unprocessedTickets->count() >= 10) {
+            $ticketsToProcess = $unprocessedTickets->take(10);
+            
+            $faqData = $this->generateFaqWithGemini($ticketsToProcess, $ticket);
+            
+            if ($faqData) {
+                Article::create([
+                    'title' => $faqData['title'],
+                    'category' => $ticket->layananKategori,
+                    'subcategory' => $ticket->layananSub ?: null,
+                    'service' => $ticket->layanan ?: null,
+                    'content' => $faqData['content'],
+                    'likes' => 0,
+                ]);
+
+                foreach ($ticketsToProcess as $t) {
+                    $t->update(['is_faq_processed' => true]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Synthesize FAQ article using Gemini AI based on 10 tickets
+     */
+    protected function generateFaqWithGemini($tickets, Ticket $referenceTicket)
+    {
+        $apiKey = env('GEMINI_API_KEY');
+        if (!$apiKey) {
+            Log::error('GEMINI_API_KEY tidak dikonfigurasi untuk auto-FAQ.');
+            return null;
+        }
+
+        $casesText = "";
+        foreach ($tickets as $index => $t) {
+            $casesText .= "Kasus #" . ($index + 1) . ":\n";
+            $casesText .= "Deskripsi Keluhan: " . $t->detail . "\n";
+            $casesText .= "Resolusi Solver: " . ($t->catatanKasubbag ?: 'Diselesaikan oleh petugas.') . "\n\n";
+        }
+
+        $systemInstruction = "Anda adalah Asisten Virtual Dokumentasi TI BPK RI. Tugas Anda adalah merangkum keluhan-keluhan pengguna dan solusi penyelesaian dari petugas TI (solver) menjadi artikel FAQ berkualitas tinggi. 
+        Format respons Anda harus SELALU berupa objek JSON yang valid dengan struktur berikut:
+        {
+          \"title\": \"Judul FAQ singkat yang jelas dan langsung ke inti permasalahan (Bahasa Indonesia)\",
+          \"content\": \"Teks konten FAQ lengkap yang menjelaskan permasalahan umum serta langkah-langkah solusinya dalam format HTML/Markdown bersih (gunakan tag paragraph p, list ul/ol/li, atau format teks tebal) agar mudah dibaca oleh pengguna.\"
+        }";
+
+        $prompt = "Berikut adalah daftar 10 keluhan user dan solusi penyelesaian terkait layanan '{$referenceTicket->layanan}' (Kategori: '{$referenceTicket->layananKategori}' -> '{$referenceTicket->layananSub}'):\n\n{$casesText}\n\nSintesiskan data di atas menjadi artikel FAQ tunggal yang profesional untuk membantu pengguna menyelesaikan masalah ini secara mandiri di kemudian hari.";
+
+        $contents = [
+            [
+                'role' => 'user',
+                'parts' => [
+                    ['text' => $prompt]
+                ]
+            ]
+        ];
+
+        $models = [
+            'gemini-3.5-flash',
+            'gemini-2.5-flash',
+            'gemini-2.5-flash-lite'
+        ];
+        
+        foreach ($models as $model) {
+            $apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . $apiKey;
+            
+            $payload = [
+                'contents' => $contents,
+                'systemInstruction' => [
+                    'parts' => [['text' => $systemInstruction]]
+                ],
+                'generationConfig' => [
+                    'responseMimeType' => 'application/json',
+                    'responseSchema' => [
+                        'type' => 'OBJECT',
+                        'properties' => [
+                            'title' => [
+                                'type' => 'STRING',
+                                'description' => 'Judul FAQ singkat yang jelas dan langsung ke inti permasalahan.'
+                            ],
+                            'content' => [
+                                'type' => 'STRING',
+                                'description' => 'Konten FAQ lengkap yang menjelaskan permasalahan umum serta langkah-langkah solusinya dalam format HTML.'
+                            ]
+                        ],
+                        'required' => ['title', 'content']
+                    ]
+                ]
+            ];
+
+            try {
+                $response = Http::post($apiUrl, $payload);
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '{}';
+                    
+                    $text = trim($text);
+                    if (strpos($text, '```') === 0) {
+                        $text = preg_replace('/^```(?:json)?\s*|\s*```$/s', '', $text);
+                    }
+                    $text = trim($text);
+                    
+                    $result = json_decode($text, true);
+                    if (!empty($result['title']) && !empty($result['content'])) {
+                        return $result;
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Gagal memanggil Gemini API untuk FAQ: ' . $e->getMessage());
+            }
+        }
+
+        return null;
     }
 }

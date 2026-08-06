@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/api/operator/faq', [DashboardController::class, 'storeFaqApi']);
         Route::post('/api/operator/faq/{id}', [DashboardController::class, 'updateFaqApi']);
         Route::delete('/api/operator/faq/{id}', [DashboardController::class, 'deleteFaqApi']);
+        Route::get('/api/operator/dataset/export', [DashboardController::class, 'exportDatasetApi']);
     });
 
     // Rute API AJAX umum (pengguna yang sudah terotentikasi)

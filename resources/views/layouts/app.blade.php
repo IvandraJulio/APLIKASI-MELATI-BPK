@@ -118,6 +118,7 @@
                 <div class="relative" x-data="{ 
                     open: false, 
                     notifications: [], 
+                    userRole: '{{ Auth::user() ? Auth::user()->role : '' }}',
                     async fetchNotifications() {
                         try {
                             const res = await fetch('/api/notifications');
@@ -136,6 +137,28 @@
                             this.fetchNotifications();
                         } catch(e) {}
                     },
+                    getNotificationUrl(n) {
+                        if (!n.ticket_id) return '#';
+                        if (this.userRole === 'pengguna') {
+                            return '/dashboard/detail?id=' + n.ticket_id;
+                        } else if (this.userRole === 'solver') {
+                            return '/solver?id=' + n.ticket_id;
+                        } else if (this.userRole === 'kasubbag') {
+                            return '/kasubbag?id=' + n.ticket_id;
+                        } else if (this.userRole === 'operator') {
+                            return '/operator/tiket?id=' + n.ticket_id;
+                        }
+                        return '#';
+                    },
+                    handleNotificationClick(e, n) {
+                        const targetUrl = this.getNotificationUrl(n);
+                        if (targetUrl === '#') return;
+                        
+                        // If we are already on that exact URL path + search query, force a reload to get the latest comments/status
+                        if (window.location.pathname + window.location.search === targetUrl) {
+                            window.location.reload();
+                        }
+                    },
                     get unreadCount() {
                         return this.notifications.filter(n => !n.is_read).length;
                     },
@@ -149,7 +172,7 @@
                         <i data-lucide="bell" class="w-4.5 h-4.5"></i>
                         <span x-show="unreadCount > 0" class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
                     </button>
-
+ 
                     <!-- Dropdown Panel -->
                     <div x-show="open" 
                          x-transition:enter="transition ease-out duration-150"
@@ -166,19 +189,21 @@
                             <span class="text-xs font-bold text-gray-800">Notifikasi</span>
                             <span x-show="unreadCount > 0" class="text-[10px] font-bold bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full" x-text="unreadCount + ' Baru'"></span>
                         </div>
-
+ 
                         <!-- Scrollable list -->
                         <div class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
                             <!-- Template for notifications -->
                             <template x-for="n in notifications" :key="n.id">
-                                <div class="p-3.5 text-left block hover:bg-slate-50/50 transition-colors"
-                                     :class="!n.is_read ? 'bg-[#fffbeb]/20' : 'bg-transparent'">
+                                <a :href="getNotificationUrl(n)"
+                                   @click="handleNotificationClick($event, n)"
+                                   class="p-3.5 text-left block hover:bg-slate-50/50 transition-colors no-underline cursor-pointer"
+                                   :class="!n.is_read ? 'bg-[#fffbeb]/20' : 'bg-transparent'">
                                     <div class="flex justify-between items-start gap-1.5 mb-1">
                                         <span class="text-[11px] font-bold text-gray-900" x-text="n.title"></span>
                                         <span class="text-[8px] text-gray-400 font-mono" x-text="new Date(n.created_at).toLocaleDateString('id-ID', {hour: '2-digit', minute:'2-digit'})"></span>
                                     </div>
                                     <p class="text-[10px] text-gray-600 leading-relaxed font-medium" x-text="n.message"></p>
-                                </div>
+                                </a>
                             </template>
 
                             <!-- Empty state -->

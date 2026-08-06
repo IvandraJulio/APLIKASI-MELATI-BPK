@@ -45,7 +45,7 @@
                         :class="activeTab === 'aktif' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'">
                     Aktif (<span x-text="tickets.filter(t => t.status !== 'Selesai' && t.status !== 'Kembalikan tiket ke operator' && t.solverId && t.solverId !== '').length"></span>)
                 </button>
-                <button @click="activeTab = 'selesai'; selectedId = null"
+                <button @click="activeTab = 'selesai'; selectedId = null"   
                         class="flex-1 py-2 text-center text-[10px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap"
                         :class="activeTab === 'selesai' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'">
                     Selesai (<span x-text="tickets.filter(t => t.status === 'Selesai' || t.status === 'Kembalikan tiket ke operator').length"></span>)

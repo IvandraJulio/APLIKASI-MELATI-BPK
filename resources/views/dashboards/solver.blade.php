@@ -380,6 +380,24 @@
                     
                     // Fetch busy status dynamically
                     await this.fetchBusyStatus();
+
+                    // Preselect ticket from URL query parameter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const queryId = urlParams.get('id');
+                    if (queryId) {
+                        const t = this.tickets.find(tick => tick.id === queryId);
+                        if (t) {
+                            this.selectedId = queryId;
+                            // Set the active tab based on status:
+                            if (t.status === 'Selesai') {
+                                this.activeTab = 'selesai';
+                            } else if (t.status === 'Diterima' || t.status === 'Dieskalasi' || (t.status === 'Ditugaskan' && !t.solverId && !t.solver2Id)) {
+                                this.activeTab = 'bisa_diambil';
+                            } else {
+                                this.activeTab = 'aktif';
+                            }
+                        }
+                    }
                     
                     const displayed = this.getDisplayedTickets();
                     if (displayed.length > 0 && !this.selectedId) {

@@ -371,6 +371,7 @@
                 const qId = params.get('id');
                 if (qId) {
                     this.selectedId = qId;
+                    this.statusFilter = 'All';
                 }
                 
                 const displayed = this.filteredTickets();

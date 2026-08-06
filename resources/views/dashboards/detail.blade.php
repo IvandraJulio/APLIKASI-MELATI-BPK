@@ -162,7 +162,7 @@
 
                                 <!-- Logs Thread -->
                                 <div class="space-y-3.5 max-h-[300px] overflow-y-auto pr-1" id="logs-box">
-                                    <template x-for="c in getSelectedTicket().comments.filter(c => ['sistem', 'terima', 'penugasan', 'mulai_kerjakan', 'penyelesaian', 'eskalasi', 'tindaklanjuti'].includes(c.type))" :key="c.id">
+                                    <template x-for="c in getSelectedTicket().comments.filter(c => ['penyelesaian', 'tindaklanjuti'].includes(c.type))" :key="c.id">
                                         <div class="p-3.5 rounded-lg border leading-relaxed text-xs" 
                                              :class="getCommentBubbleClass(c.type)">
                                             <div class="flex items-center justify-between gap-2 mb-1.5">
@@ -172,12 +172,11 @@
                                                           :class="getRoleBadgeClass(c.authorRole)"
                                                           x-text="c.authorRole"></span>
                                                 </div>
-                                                <span class="text-[9px] text-gray-400 font-mono" x-text="c.timestamp"></span>
                                             </div>
                                             <p class="text-xs font-medium text-gray-700 whitespace-pre-wrap" x-text="c.text"></p>
                                         </div>
                                     </template>
-                                    <div x-show="getSelectedTicket().comments.filter(c => ['sistem', 'terima', 'penugasan', 'mulai_kerjakan', 'penyelesaian', 'eskalasi', 'tindaklanjuti'].includes(c.type)).length === 0" class="text-center py-6 text-gray-400 text-xs">
+                                    <div x-show="getSelectedTicket().comments.filter(c => ['penyelesaian', 'tindaklanjuti'].includes(c.type)).length === 0" class="text-center py-6 text-gray-400 text-xs">
                                         Belum ada log aktivitas.
                                     </div>
                                 </div>

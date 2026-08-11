@@ -118,7 +118,7 @@
                                     <td class="p-3 font-semibold text-gray-900">{{ $t->pengirimName }}</td>
                                     <td class="p-3 truncate max-w-[150px]">{{ $t->layanan }}</td>
                                     <td class="p-3">
-                                        <span class="status-badge {{ $t->status === 'Dieskalasi' ? 'status-dieskalasi' : ($t->status === 'Dikerjakan' ? 'status-dikerjakan' : ($t->status === 'Ditugaskan' ? 'status-ditugaskan' : ($t->status === 'Diterima' ? 'status-diterima' : 'status-pending'))) }}">
+                                        <span class="status-badge {{ $t->status === 'Overdue' ? 'status-overdue' : ($t->status === 'Dieskalasi' ? 'status-dieskalasi' : ($t->status === 'Dikerjakan' ? 'status-dikerjakan' : ($t->status === 'Ditugaskan' ? 'status-ditugaskan' : ($t->status === 'Diterima' ? 'status-diterima' : 'status-pending')))) }}">
                                             {{ $t->status === 'Pending' ? 'Pending / New' : $t->status }}
                                         </span>
                                     </td>

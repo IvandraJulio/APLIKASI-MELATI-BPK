@@ -190,6 +190,7 @@ class DashboardController extends Controller
             'layananSub' => 'required|string',
             'layanan' => 'nullable|string',
             'detail' => 'required|string',
+            'bisa_remote' => 'nullable|boolean',
         ]);
 
         $user = Auth::user();
@@ -202,6 +203,7 @@ class DashboardController extends Controller
             'k6' => 'Subbagian Tata Kelola Data',
             'k7' => 'Subbagian Keamanan Informasi',
             'k8' => 'Subbagian MIOT',
+            'plti' => 'Pusat Layanan Teknologi Informasi Perwakilan',
         ];
 
         $subbagRouting = [
@@ -228,6 +230,13 @@ class DashboardController extends Controller
 
         // Route dynamically
         $subbagId = $subbagRouting[$sub] ?? $subbagRouting[$category] ?? 'k2';
+
+        // Logika Routing Lokasi & Remote
+        $bisaRemote = filter_var($request->bisa_remote, FILTER_VALIDATE_BOOLEAN);
+        if ($user->lokasi === 'Kantor Perwakilan' && !$bisaRemote) {
+            $subbagId = 'plti';
+        }
+
         $subbagName = $subbagMaster[$subbagId] ?? 'Subbagian Pelayanan TIK';
 
         $kasubbagUser = User::where('role', 'kasubbag')->where('subbagId', $subbagId)->first();
@@ -248,6 +257,7 @@ class DashboardController extends Controller
             'layananSub' => $sub,
             'layanan' => $layanan,
             'detail' => $request->detail,
+            'bisa_remote' => $bisaRemote,
             'tanggal' => date('Y-m-d'),
             'tanggalUpdate' => $now,
             'kasubbagId' => $subbagId,
@@ -451,8 +461,8 @@ class DashboardController extends Controller
 
         // 1. Kirim notifikasi ke Pelapor ketika status tiket berubah
         if ($newStatus !== $oldStatus) {
-            $isOldActive = in_array($oldStatus, ['Diterima', 'Ditugaskan', 'Dikerjakan', 'Dieskalasi']);
-            $isNewActive = in_array($newStatus, ['Diterima', 'Ditugaskan', 'Dikerjakan', 'Dieskalasi']);
+            $isOldActive = in_array($oldStatus, ['Diterima', 'Ditugaskan', 'Dikerjakan', 'Dieskalasi', 'Overdue']);
+            $isNewActive = in_array($newStatus, ['Diterima', 'Ditugaskan', 'Dikerjakan', 'Dieskalasi', 'Overdue']);
 
             if ($isNewActive && !$isOldActive) {
                 Notification::create([
@@ -490,7 +500,7 @@ class DashboardController extends Controller
         }
 
         // 3. Kirim notifikasi ke semua Solver jika tiket didelegasikan kembali (bisa diambil kembali)
-        if (empty($newSolverId) && !empty($newKasubbagId) && (!empty($oldSolverId) || $newStatus === 'Dieskalasi')) {
+        if (empty($newSolverId) && !empty($newKasubbagId) && (!empty($oldSolverId) || $newStatus === 'Dieskalasi' || $newStatus === 'Overdue')) {
             $solvers = User::where('role', 'solver')->where('subbagId', $newKasubbagId)->get();
             foreach ($solvers as $solver) {
                 Notification::create([
@@ -809,9 +819,14 @@ Format respons Anda harus SELALU berupa objek JSON yang valid dengan struktur be
     \"sub\": \"Nama Sub-Layanan Level 2\",
     \"service\": \"Nama Detail Layanan Level 3\",
     \"confidence\": \"Tinggi\" | \"Sedang\" | \"Rendah\",
-    \"score\": 5
+    \"score\": 5,
+    \"problem_analysis\": \"- **Masalah Utama:** [Penjelasan singkat kendala]\\n- **Detail Kendala:** [Analisis/kronologi masalah berdasarkan chat pengguna]\\n- **Dampak:** [Gangguan yang ditimbulkan terhadap aktivitas kerja pengguna]\"
   }
-}";
+}
+
+Catatan penting untuk `problem_analysis`:
+1. Kolom ini hanya wajib diisi jika `suggest_ticket` bernilai `true`. Jika `suggest_ticket` bernilai `false`, isi dengan string kosong atau null.
+2. Analisis harus ditulis terstruktur menggunakan bullet points dengan format konsisten di atas agar dapat langsung di-autofill di form tiket.";
 
         $models = [
             'gemini-3.5-flash',
@@ -867,6 +882,10 @@ Format respons Anda harus SELALU berupa objek JSON yang valid dengan struktur be
                                         ],
                                         'score' => [
                                             'type' => 'INTEGER'
+                                        ],
+                                        'problem_analysis' => [
+                                            'type' => 'STRING',
+                                            'description' => 'Struktur analisis masalah dari pengguna dalam Bahasa Indonesia untuk di-autofill di form tiket. Gunakan struktur yang konsisten (Masalah Utama, Detail Kendala, Dampak) menggunakan bullet points.'
                                         ]
                                     ],
                                     'required' => ['category', 'sub', 'service', 'confidence']

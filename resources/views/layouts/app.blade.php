@@ -51,6 +51,7 @@
             'k6' => 'Subbagian Tata Kelola Data',
             'k7' => 'Subbagian Keamanan Informasi',
             'k8' => 'Subbagian MIOT',
+            'plti' => 'Pusat Layanan Teknologi Informasi Perwakilan',
         ];
         $subbagName = $currentUser && $currentUser->subbagId ? ($subbagMaster[$currentUser->subbagId] ?? '') : '';
 

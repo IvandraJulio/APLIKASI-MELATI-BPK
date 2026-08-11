@@ -62,3 +62,9 @@
     color: #991b1b;
     border: 1px solid #fecaca;
 }
+
+@utility status-overdue {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}

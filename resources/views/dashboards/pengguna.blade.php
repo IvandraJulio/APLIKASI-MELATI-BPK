@@ -356,6 +356,12 @@
                              <textarea x-model="detailMasalah" rows="5" placeholder="Tulis deskripsi kendala/permintaan..." class="w-full bg-white border border-slate-200 focus:border-[#b26d27] text-gray-800 rounded-xl px-3.5 py-2.5 text-xs outline-none transition-all font-semibold placeholder:text-gray-300"></textarea>
                          </div>
 
+                         <!-- Remote Support Checkbox -->
+                         <div class="flex items-center gap-2 py-1">
+                             <input type="checkbox" x-model="bisaRemote" id="bisaRemoteCheckbox" class="w-4 h-4 rounded text-[#b26d27] border-gray-300 focus:ring-[#b26d27] cursor-pointer">
+                             <label for="bisaRemoteCheckbox" class="text-[10px] font-bold text-gray-800 cursor-pointer">Dapat diselesaikan secara remote / jarak jauh (tanpa kunjungan fisik)</label>
+                         </div>
+
                          <!-- Submit Button -->
                          <button type="submit" :disabled="loadingSubmit" class="w-full bg-[#E7BE8D] hover:bg-[#d9ab75] text-white font-bold text-xs py-3 rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50">
                              <i data-lucide="send" class="w-4 h-4"></i>
@@ -425,6 +431,7 @@
             subLayanan: '',
             detailLayanan: '',
             detailMasalah: '',
+            bisaRemote: false,
             loadingSubmit: false,
             successMessage: '',
             showForm: false,
@@ -733,6 +740,9 @@
             applyRecommendation(rec) {
                 this.kategori = rec.category;
                 this.showForm = true;
+                if (rec && rec.problem_analysis) {
+                    this.detailMasalah = rec.problem_analysis;
+                }
                 this.$nextTick(() => {
                     this.subLayanan = rec.sub;
                     this.$nextTick(() => {
@@ -761,7 +771,8 @@
                             layananKategori: this.kategori,
                             layananSub: this.subLayanan,
                             layanan: this.detailLayanan || this.subLayanan,
-                            detail: this.detailMasalah
+                            detail: this.detailMasalah,
+                            bisa_remote: this.bisaRemote
                         })
                     });
 
@@ -775,6 +786,7 @@
                         this.subLayanan = '';
                         this.detailLayanan = '';
                         this.detailMasalah = '';
+                        this.bisaRemote = false;
                         this.$nextTick(() => {
                             if (window.lucide) lucide.createIcons();
                         });
@@ -1002,7 +1014,8 @@
 
                 if (maxScore > 0 && bestRule) {
                     const confidence = maxScore >= 2 ? "Tinggi" : "Sedang";
-
+                    const localAnalysis = `- **Masalah Utama:** ${bestRule.service}\n- **Detail Kendala:** ${userText}\n- **Dampak:** Terganggunya aktivitas pekerjaan pegawai.`;
+ 
                     // Special location check for Wi-Fi configurations
                     let isWifi = bestRule.service === 'Pengaturan konfigurasi Wifi Biro';
                     if (isWifi) {
@@ -1018,7 +1031,8 @@
                                     category: bestRule.category,
                                     sub: bestRule.sub,
                                     service: bestRule.service,
-                                    confidence: confidence
+                                    confidence: confidence,
+                                    problem_analysis: localAnalysis
                                 },
                                 showConfirmation: false,
                                 confirmed: false
@@ -1029,7 +1043,7 @@
                             const hasMenara = lowerChat.includes('menara');
                             const hasLantai = lowerChat.includes('lantai') || /\blt\s*\d+/i.test(lowerChat) || /\bfloor\s*\d+/i.test(lowerChat);
                             const hasLocation = hasMenara && hasLantai;
-
+ 
                             if (!hasLocation) {
                                 // LANGKAH 2: Tanya lokasi (menara & lantai)
                                 this.chatMessages.push({
@@ -1040,7 +1054,8 @@
                                         category: bestRule.category,
                                         sub: bestRule.sub,
                                         service: bestRule.service,
-                                        confidence: confidence
+                                        confidence: confidence,
+                                        problem_analysis: localAnalysis
                                     },
                                     showConfirmation: false,
                                     confirmed: false
@@ -1055,7 +1070,8 @@
                                         category: bestRule.category,
                                         sub: bestRule.sub,
                                         service: bestRule.service,
-                                        confidence: confidence
+                                        confidence: confidence,
+                                        problem_analysis: localAnalysis
                                     },
                                     showConfirmation: true,
                                     confirmed: false
@@ -1072,7 +1088,8 @@
                                 category: bestRule.category,
                                 sub: bestRule.sub,
                                 service: bestRule.service,
-                                confidence: confidence
+                                confidence: confidence,
+                                problem_analysis: localAnalysis
                             },
                             showConfirmation: false,
                             confirmed: false
@@ -1087,7 +1104,8 @@
                                 category: bestRule.category,
                                 sub: bestRule.sub,
                                 service: bestRule.service,
-                                confidence: confidence
+                                confidence: confidence,
+                                problem_analysis: localAnalysis
                             },
                             showConfirmation: true,
                             confirmed: false

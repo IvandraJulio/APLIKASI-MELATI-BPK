@@ -192,6 +192,7 @@
                     case 'Ditugaskan': return 'status-ditugaskan';
                     case 'Dikerjakan': return 'status-dikerjakan';
                     case 'Dieskalasi': return 'status-dieskalasi';
+                    case 'Overdue': return 'status-overdue';
                     case 'Selesai': return 'status-selesai';
                     default: return 'status-pending';
                 }

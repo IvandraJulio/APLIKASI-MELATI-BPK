@@ -42,6 +42,7 @@
                         <button @click="statusFilter = 'Ditugaskan'; openStatusDropdown = false;" type="button" class="w-full text-left p-3 text-xs text-gray-900 hover:bg-slate-50 font-bold transition-colors bg-white cursor-pointer" :class="statusFilter === 'Ditugaskan' ? 'text-[#b26d27]' : ''">Ditugaskan</button>
                         <button @click="statusFilter = 'Dikerjakan'; openStatusDropdown = false;" type="button" class="w-full text-left p-3 text-xs text-gray-900 hover:bg-slate-50 font-bold transition-colors bg-white cursor-pointer" :class="statusFilter === 'Dikerjakan' ? 'text-[#b26d27]' : ''">Dikerjakan</button>
                         <button @click="statusFilter = 'Dieskalasi'; openStatusDropdown = false;" type="button" class="w-full text-left p-3 text-xs text-gray-900 hover:bg-slate-50 font-bold transition-colors bg-white cursor-pointer" :class="statusFilter === 'Dieskalasi' ? 'text-[#b26d27]' : ''">Dieskalasi</button>
+                        <button @click="statusFilter = 'Overdue'; openStatusDropdown = false;" type="button" class="w-full text-left p-3 text-xs text-gray-900 hover:bg-slate-50 font-bold transition-colors bg-white cursor-pointer" :class="statusFilter === 'Overdue' ? 'text-[#b26d27]' : ''">Overdue</button>
                         <button @click="statusFilter = 'Selesai'; openStatusDropdown = false;" type="button" class="w-full text-left p-3 text-xs text-gray-900 hover:bg-slate-50 font-bold transition-colors bg-white cursor-pointer" :class="statusFilter === 'Selesai' ? 'text-[#b26d27]' : ''">Selesai</button>
                         <button @click="statusFilter = 'Kembalikan tiket ke operator'; openStatusDropdown = false;" type="button" class="w-full text-left p-3 text-xs text-gray-900 hover:bg-slate-50 font-bold transition-colors bg-white cursor-pointer" :class="statusFilter === 'Kembalikan tiket ke operator' ? 'text-[#b26d27]' : ''">Dikembalikan</button>
                     </div>
@@ -90,6 +91,12 @@
                                     <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
                                     <span>Buka Kembali Tiket</span>
                                 </button>
+                            </template>
+                            <template x-if="getSelectedTicket().status === 'Overdue'">
+                                <span class="bg-rose-50 border border-rose-200 text-rose-800 text-[10px] font-bold px-2.5 py-1 rounded-xl flex items-center gap-1.5 animate-pulse">
+                                    <i data-lucide="clock" class="w-3.5 h-3.5 text-rose-600"></i>
+                                    <span x-text="'Telat ' + getOverdueHours(getSelectedTicket()) + ' jam'"></span>
+                                </span>
                             </template>
                             <span class="status-badge" :class="getStatusBadgeClass(getSelectedTicket().status)" x-text="getSelectedTicket().status === 'Kembalikan tiket ke operator' ? 'Dikembalikan' : (getSelectedTicket().status === 'Pending' ? 'Pending / New' : getSelectedTicket().status)"></span>
                         </div>
@@ -543,9 +550,19 @@
                     case 'Ditugaskan': return 'status-ditugaskan';
                     case 'Dikerjakan': return 'status-dikerjakan';
                     case 'Dieskalasi': return 'status-dieskalasi';
+                    case 'Overdue': return 'status-overdue';
                     case 'Selesai': return 'status-selesai';
                     default: return 'status-pending';
                 }
+            },
+
+            getOverdueHours(t) {
+                if (!t || !t.created_at) return 0;
+                const createdTime = new Date(t.created_at).getTime();
+                if (isNaN(createdTime)) return 0;
+                const elapsedMs = Date.now() - createdTime;
+                const totalHours = Math.floor(elapsedMs / (1000 * 60 * 60));
+                return Math.max(0, totalHours - 24);
             },
 
             getCommentBubbleClass(type) {
@@ -556,6 +573,7 @@
                     case 'mulai_kerjakan': return 'bg-purple-50 border-l-4 border-l-purple-500 text-purple-800';
                     case 'penyelesaian': return 'bg-green-50 border-l-4 border-l-green-600 text-green-800';
                     case 'eskalasi': return 'bg-amber-50 border-l-4 border-l-amber-500 text-amber-800';
+                    case 'overdue': return 'bg-rose-50 border-l-4 border-l-rose-500 text-rose-800';
                     case 'tindaklanjuti': return 'bg-sky-50 border-l-4 border-l-sky-500 text-sky-800';
                     default: return 'bg-white border-[#e2e6ea] shadow-xs text-gray-800';
                 }

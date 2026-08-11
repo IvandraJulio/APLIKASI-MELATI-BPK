@@ -58,7 +58,7 @@
             <template x-for="t in getDisplayedTickets()" :key="t.id">
                 <button @click="selectTicket(t.id)"
                         class="w-full p-4 text-left transition-all block relative cursor-pointer"
-                        :class="selectedId === t.id ? 'bg-[#fcf4ec] border-l-4 border-l-[#b26d27]' : (isOverdue(t) ? 'bg-rose-50/40 hover:bg-rose-50/70 border-l-4 border-l-rose-500' : 'bg-transparent hover:bg-slate-50')">
+                        :class="selectedId === t.id ? 'bg-[#fcf4ec] border-l-4 border-l-[#b26d27]' : ((isOverdue(t) || t.status === 'Overdue') ? 'bg-rose-50/40 hover:bg-rose-50/70 border-l-4 border-l-rose-500' : 'bg-transparent hover:bg-slate-50')">
                     <div class="flex items-center justify-between gap-1.5 mb-1.5">
                         <div class="flex items-center gap-1.5">
                             <span class="font-mono font-bold text-xs text-gray-800" x-text="t.id"></span>
@@ -67,10 +67,10 @@
                                     Eskalasi
                                 </span>
                             </template>
-                            <template x-if="isOverdue(t)">
+                            <template x-if="isOverdue(t) || t.status === 'Overdue'">
                                 <span class="bg-rose-100 text-rose-800 text-[8px] font-black px-1.5 py-0.5 rounded uppercase font-mono flex items-center gap-0.5 animate-pulse">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                                    Terlalu Lama
+                                    <span x-text="'Overdue (' + getOverdueHours(t) + ' Jam)'"></span>
                                 </span>
                             </template>
                         </div>
@@ -115,16 +115,16 @@
                     </div>
                 </div>
 
-                <!-- Warning Banner for Overdue Ticket -->
-                <template x-if="isOverdue(getSelectedTicket())">
+                 <!-- Warning Banner for Overdue Ticket -->
+                <template x-if="isOverdue(getSelectedTicket()) || getSelectedTicket().status === 'Overdue'">
                     <div class="bg-rose-50 border-b border-rose-100 px-5 py-3 flex items-center justify-between gap-3 shrink-0">
                         <div class="flex items-center gap-2.5">
                             <div class="bg-rose-500 text-white rounded-full p-1 shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
                             </div>
                             <div>
-                                <h4 class="text-xs font-bold text-rose-800">PERINGATAN: Tiket Terlalu Lama Belum Diambil</h4>
-                                <p class="text-[10px] text-rose-600 font-medium mt-0.5" x-text="'Tiket ini belum ditugaskan ke solver selama ' + getOverdueDuration(getSelectedTicket()) + '.'"></p>
+                                <h4 class="text-xs font-bold text-rose-800">PERINGATAN: Tiket Terlambat (Overdue)</h4>
+                                <p class="text-[10px] text-rose-600 font-medium mt-0.5" x-text="'Tiket ini telah terlambat selama ' + getOverdueHours(getSelectedTicket()) + ' jam (Overdue).'"></p>
                             </div>
                         </div>
                         <button @click="openAssignModal()" class="bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-extrabold px-3 py-1.5 rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1">
@@ -169,7 +169,7 @@
                         <div class="flex flex-wrap gap-2.5">
                             <!-- Accept Ticket -->
                             <button @click="acceptTicket()" 
-                                    x-show="getSelectedTicket().status === 'Pending'"
+                                    x-show="getSelectedTicket().status === 'Pending' || getSelectedTicket().status === 'Overdue'"
                                     class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer flex items-center gap-1.5">
                                 <i data-lucide="check-circle" class="w-4 h-4"></i>
                                 Terima Tiket
@@ -177,7 +177,7 @@
 
                             <!-- Assign Solver -->
                             <button @click="openAssignModal()" 
-                                    x-show="getSelectedTicket().status === 'Diterima' || getSelectedTicket().status === 'Ditugaskan' || getSelectedTicket().status === 'Dikerjakan' || getSelectedTicket().status === 'Dieskalasi'"
+                                    x-show="getSelectedTicket().status === 'Diterima' || getSelectedTicket().status === 'Ditugaskan' || getSelectedTicket().status === 'Dikerjakan' || getSelectedTicket().status === 'Dieskalasi' || getSelectedTicket().status === 'Overdue'"
                                     class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer flex items-center gap-1.5">
                                 <i data-lucide="user-check" class="w-4 h-4"></i>
                                 Tugaskan Solver
@@ -185,7 +185,7 @@
 
                             <!-- Return to Operator -->
                             <button @click="openRejectModal()" 
-                                    x-show="getSelectedTicket().status === 'Pending' || getSelectedTicket().status === 'Diterima' || getSelectedTicket().status === 'Dieskalasi'"
+                                    x-show="getSelectedTicket().status === 'Pending' || getSelectedTicket().status === 'Diterima' || getSelectedTicket().status === 'Dieskalasi' || getSelectedTicket().status === 'Overdue'"
                                     class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer flex items-center gap-1.5">
                                 <i data-lucide="x-circle" class="w-4 h-4"></i>
                                 Kembalikan ke Operator
@@ -646,6 +646,15 @@
                 return `${hours} jam`;
             },
 
+            getOverdueHours(t) {
+                if (!t || !t.created_at) return 0;
+                const createdTime = new Date(t.created_at).getTime();
+                if (isNaN(createdTime)) return 0;
+                const elapsedMs = Date.now() - createdTime;
+                const totalHours = Math.floor(elapsedMs / (1000 * 60 * 60));
+                return Math.max(0, totalHours - 24);
+            },
+
             getStatusBadgeClass(status) {
                 const s = status === 'Kembalikan tiket ke operator' ? 'Pending' : status;
                 switch (s) {
@@ -654,6 +663,7 @@
                     case 'Ditugaskan': return 'status-ditugaskan';
                     case 'Dikerjakan': return 'status-dikerjakan';
                     case 'Dieskalasi': return 'status-dieskalasi';
+                    case 'Overdue': return 'status-overdue';
                     case 'Selesai': return 'status-selesai';
                     default: return 'status-pending';
                 }
@@ -667,6 +677,7 @@
                     case 'mulai_kerjakan': return 'bg-purple-50 border-l-4 border-l-purple-500 text-purple-800';
                     case 'penyelesaian': return 'bg-green-50 border-l-4 border-l-green-600 text-green-800';
                     case 'eskalasi': return 'bg-amber-50 border-l-4 border-l-amber-500 text-amber-800';
+                    case 'overdue': return 'bg-rose-50 border-l-4 border-l-rose-500 text-rose-800';
                     case 'tindaklanjuti': return 'bg-sky-50 border-l-4 border-l-sky-500 text-sky-800';
                     default: return 'bg-white border-[#e2e6ea] shadow-xs text-gray-800';
                 }

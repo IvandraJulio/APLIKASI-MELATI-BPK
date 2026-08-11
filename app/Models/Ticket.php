@@ -20,6 +20,7 @@ class Ticket extends Model
         'layananSub',
         'layanan',
         'detail',
+        'bisa_remote',
         'tanggal',
         'tanggalUpdate',
         'tanggalSelesai',

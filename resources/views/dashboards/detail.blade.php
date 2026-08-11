@@ -64,6 +64,12 @@
                             <p class="text-[11px] text-gray-400 mt-1" x-text="'ID: ' + getSelectedTicket().id + ' | Diajukan: ' + getSelectedTicket().tanggal"></p>
                         </div>
                         <div class="flex items-center gap-2">
+                            <template x-if="getSelectedTicket().status === 'Overdue'">
+                                <span class="bg-rose-50 border border-rose-200 text-rose-800 text-[10px] font-bold px-2.5 py-1 rounded-xl flex items-center gap-1.5 animate-pulse">
+                                    <i data-lucide="clock" class="w-3.5 h-3.5 text-rose-600"></i>
+                                    <span x-text="'Telat ' + getOverdueHours(getSelectedTicket()) + ' jam'"></span>
+                                </span>
+                            </template>
                             <template x-if="canReopen(getSelectedTicket())">
                                 <button @click="reopenTicket(getSelectedTicket().id)" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
                                     <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
@@ -116,7 +122,7 @@
 
                                 <!-- Comments Thread -->
                                 <div class="space-y-3.5 max-h-[300px] overflow-y-auto pr-1" id="comments-box">
-                                    <template x-for="c in getSelectedTicket().comments.filter(c => !['sistem', 'terima', 'penugasan', 'mulai_kerjakan', 'penyelesaian', 'eskalasi', 'tindaklanjuti'].includes(c.type))" :key="c.id">
+                                    <template x-for="c in getSelectedTicket().comments.filter(c => !['sistem', 'terima', 'penugasan', 'mulai_kerjakan', 'penyelesaian', 'eskalasi', 'tindaklanjuti', 'overdue'].includes(c.type))" :key="c.id">
                                         <div class="p-3.5 rounded-lg border leading-relaxed text-xs" 
                                              :class="getCommentBubbleClass(c.type)">
                                             <div class="flex items-center justify-between gap-2 mb-1.5">
@@ -131,7 +137,7 @@
                                             <p class="text-xs font-medium text-gray-700 whitespace-pre-wrap" x-text="c.text"></p>
                                         </div>
                                     </template>
-                                    <div x-show="getSelectedTicket().comments.filter(c => !['sistem', 'terima', 'penugasan', 'mulai_kerjakan', 'penyelesaian', 'eskalasi', 'tindaklanjuti'].includes(c.type)).length === 0" class="text-center py-6 text-gray-400 text-xs">
+                                    <div x-show="getSelectedTicket().comments.filter(c => !['sistem', 'terima', 'penugasan', 'mulai_kerjakan', 'penyelesaian', 'eskalasi', 'tindaklanjuti', 'overdue'].includes(c.type)).length === 0" class="text-center py-6 text-gray-400 text-xs">
                                         Belum ada obrolan.
                                     </div>
                                 </div>
@@ -162,7 +168,7 @@
 
                                 <!-- Logs Thread -->
                                 <div class="space-y-3.5 max-h-[300px] overflow-y-auto pr-1" id="logs-box">
-                                    <template x-for="c in getSelectedTicket().comments.filter(c => ['penyelesaian', 'tindaklanjuti'].includes(c.type))" :key="c.id">
+                                    <template x-for="c in getSelectedTicket().comments.filter(c => ['penyelesaian', 'tindaklanjuti', 'overdue', 'eskalasi'].includes(c.type))" :key="c.id">
                                         <div class="p-3.5 rounded-lg border leading-relaxed text-xs" 
                                              :class="getCommentBubbleClass(c.type)">
                                             <div class="flex items-center justify-between gap-2 mb-1.5">
@@ -176,7 +182,7 @@
                                             <p class="text-xs font-medium text-gray-700 whitespace-pre-wrap" x-text="c.text"></p>
                                         </div>
                                     </template>
-                                    <div x-show="getSelectedTicket().comments.filter(c => ['penyelesaian', 'tindaklanjuti'].includes(c.type)).length === 0" class="text-center py-6 text-gray-400 text-xs">
+                                    <div x-show="getSelectedTicket().comments.filter(c => ['penyelesaian', 'tindaklanjuti', 'overdue', 'eskalasi'].includes(c.type)).length === 0" class="text-center py-6 text-gray-400 text-xs">
                                         Belum ada log aktivitas.
                                     </div>
                                 </div>
@@ -284,6 +290,7 @@
                     case 'Ditugaskan': return 'status-ditugaskan';
                     case 'Dikerjakan': return 'status-dikerjakan';
                     case 'Dieskalasi': return 'status-dieskalasi';
+                    case 'Overdue': return 'status-overdue';
                     case 'Selesai': return 'status-selesai';
                     default: return 'status-pending';
                 }
@@ -297,9 +304,19 @@
                     case 'mulai_kerjakan': return 'bg-purple-50 border-l-4 border-l-purple-500 text-purple-800';
                     case 'penyelesaian': return 'bg-green-50 border-l-4 border-l-green-600 text-green-800';
                     case 'eskalasi': return 'bg-amber-50 border-l-4 border-l-amber-500 text-amber-800';
+                    case 'overdue': return 'bg-rose-50 border-l-4 border-l-rose-500 text-rose-800';
                     case 'tindaklanjuti': return 'bg-sky-50 border-l-4 border-l-sky-500 text-sky-800';
                     default: return 'bg-white border-[#e2e6ea] shadow-xs text-gray-800';
                 }
+            },
+
+            getOverdueHours(t) {
+                if (!t || !t.created_at) return 0;
+                const createdTime = new Date(t.created_at).getTime();
+                if (isNaN(createdTime)) return 0;
+                const elapsedMs = Date.now() - createdTime;
+                const hours = Math.floor(elapsedMs / (1000 * 60 * 60));
+                return Math.max(0, hours - 24);
             },
 
             getRoleBadgeClass(role) {

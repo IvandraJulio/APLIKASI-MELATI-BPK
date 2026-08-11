@@ -332,7 +332,7 @@ class DashboardController extends Controller
                 return response()->json(['error' => 'Batas waktu 24 jam untuk membuka kembali tiket ini telah berakhir.'], 400);
             }
 
-            $newStatus = !empty($ticket->solverId) ? 'Dikerjakan' : 'Pending';
+            $newStatus = (!empty($ticket->solverId) || !empty($ticket->solver2Id)) ? 'Dikerjakan' : 'Pending';
 
             $ticket->update([
                 'status' => $newStatus,
@@ -354,6 +354,8 @@ class DashboardController extends Controller
                 'type' => 'tindaklanjuti',
             ]);
 
+            $hasNotifiedSolver = false;
+
             if (!empty($ticket->solverId)) {
                 Notification::create([
                     'user_id' => $ticket->solverId,
@@ -361,7 +363,20 @@ class DashboardController extends Controller
                     'title' => 'Tiket Dibuka Kembali',
                     'message' => "{$roleDisplay} ({$user->name}) telah membuka kembali tiket {$ticket->id} ({$ticket->layanan}).",
                 ]);
-            } elseif (!empty($ticket->kasubbagId)) {
+                $hasNotifiedSolver = true;
+            }
+
+            if (!empty($ticket->solver2Id)) {
+                Notification::create([
+                    'user_id' => $ticket->solver2Id,
+                    'ticket_id' => $ticket->id,
+                    'title' => 'Tiket Dibuka Kembali',
+                    'message' => "{$roleDisplay} ({$user->name}) telah membuka kembali tiket {$ticket->id} ({$ticket->layanan}).",
+                ]);
+                $hasNotifiedSolver = true;
+            }
+
+            if (!$hasNotifiedSolver && !empty($ticket->kasubbagId)) {
                 $kasubbagUsers = User::where('role', 'kasubbag')->where('subbagId', $ticket->kasubbagId)->get();
                 foreach ($kasubbagUsers as $kb) {
                     if ($kb->id !== $user->id) {

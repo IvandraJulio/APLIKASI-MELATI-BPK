@@ -58,13 +58,19 @@
             <template x-for="t in getDisplayedTickets()" :key="t.id">
                 <button @click="selectTicket(t.id)"
                         class="w-full p-4 text-left transition-all block relative cursor-pointer"
-                        :class="selectedId === t.id ? 'bg-[#fcf4ec] border-l-4 border-l-[#b26d27]' : 'bg-transparent hover:bg-slate-50'">
+                        :class="selectedId === t.id ? 'bg-[#fcf4ec] border-l-4 border-l-[#b26d27]' : (isOverdue(t) ? 'bg-rose-50/40 hover:bg-rose-50/70 border-l-4 border-l-rose-500' : 'bg-transparent hover:bg-slate-50')">
                     <div class="flex items-center justify-between gap-1.5 mb-1.5">
                         <div class="flex items-center gap-1.5">
                             <span class="font-mono font-bold text-xs text-gray-800" x-text="t.id"></span>
                             <template x-if="t.status === 'Dieskalasi'">
                                 <span class="bg-orange-100 text-orange-800 text-[8px] font-black px-1.5 py-0.5 rounded uppercase font-mono animate-pulse">
                                     Eskalasi
+                                </span>
+                            </template>
+                            <template x-if="isOverdue(t)">
+                                <span class="bg-rose-100 text-rose-800 text-[8px] font-black px-1.5 py-0.5 rounded uppercase font-mono flex items-center gap-0.5 animate-pulse">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                                    Terlalu Lama
                                 </span>
                             </template>
                         </div>
@@ -108,6 +114,25 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Warning Banner for Overdue Ticket -->
+                <template x-if="isOverdue(getSelectedTicket())">
+                    <div class="bg-rose-50 border-b border-rose-100 px-5 py-3 flex items-center justify-between gap-3 shrink-0">
+                        <div class="flex items-center gap-2.5">
+                            <div class="bg-rose-500 text-white rounded-full p-1 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-rose-800">PERINGATAN: Tiket Terlalu Lama Belum Diambil</h4>
+                                <p class="text-[10px] text-rose-600 font-medium mt-0.5" x-text="'Tiket ini belum ditugaskan ke solver selama ' + getOverdueDuration(getSelectedTicket()) + '.'"></p>
+                            </div>
+                        </div>
+                        <button @click="openAssignModal()" class="bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-extrabold px-3 py-1.5 rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-check"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+                            Tugaskan Sekarang
+                        </button>
+                    </div>
+                </template>
 
                 <!-- Scrollable body content -->
                 <div class="flex-1 overflow-y-auto p-5 space-y-6">
@@ -585,6 +610,40 @@
                 } catch (e) {
                     alert('Terjadi kesalahan jaringan.');
                 }
+            },
+
+            isOverdue(t) {
+                if (!t || !t.created_at) return false;
+                
+                // Tiket belum diambil jika solverId belum diisi dan status bukan Selesai/Ditolak
+                const isNotTaken = !t.solverId || t.solverId === '';
+                const isClosed = t.status === 'Selesai' || t.status === 'Kembalikan tiket ke operator';
+                if (!isNotTaken || isClosed) return false;
+
+                const createdTime = new Date(t.created_at).getTime();
+                if (isNaN(createdTime)) return false;
+
+                const now = Date.now();
+                const elapsedMs = now - createdTime;
+                const hours24Ms = 24 * 60 * 60 * 1000;
+
+                return elapsedMs > hours24Ms;
+            },
+
+            getOverdueDuration(t) {
+                if (!t || !t.created_at) return '';
+                const createdTime = new Date(t.created_at).getTime();
+                if (isNaN(createdTime)) return '';
+                const elapsedMs = Date.now() - createdTime;
+                
+                const totalHours = Math.floor(elapsedMs / (1000 * 60 * 60));
+                const days = Math.floor(totalHours / 24);
+                const hours = totalHours % 24;
+                
+                if (days > 0) {
+                    return `${days} hari ${hours} jam`;
+                }
+                return `${hours} jam`;
             },
 
             getStatusBadgeClass(status) {

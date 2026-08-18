@@ -65,6 +65,12 @@
                     
                     <div class="flex items-center justify-between gap-2 mt-2.5">
                         <span class="status-badge font-semibold" :class="getStatusBadgeClass(t.status)" x-text="t.status === 'Kembalikan tiket ke operator' ? 'Dikembalikan' : (t.status === 'Pending' ? 'Pending / New' : t.status)"></span>
+                        <template x-if="t.bisa_remote">
+                            <span class="bg-emerald-100 text-emerald-800 text-[8px] font-black px-1.5 py-0.5 rounded uppercase font-mono flex items-center gap-0.5" title="Dapat diselesaikan secara online">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                                Online
+                            </span>
+                        </template>
                     </div>
                 </div>
             </template>
@@ -115,7 +121,7 @@
                     </div>
 
                     <!-- Flow Information -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-medium text-gray-600">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-medium text-gray-600">
                         <div class="border border-slate-100 p-3 rounded-xl space-y-1">
                             <div class="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Rute Subbagian</div>
                             <div class="text-gray-800 font-bold" x-text="getSelectedTicket().kasubbagName"></div>
@@ -126,6 +132,23 @@
                                 <span x-text="getSelectedTicket().solverName"></span>
                                 <template x-if="getSelectedTicket().solver2Name">
                                     <span x-text="' & ' + getSelectedTicket().solver2Name"></span>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="border border-slate-100 p-3 rounded-xl flex flex-col justify-center space-y-1">
+                            <div class="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Metode Penanganan</div>
+                            <div>
+                                <template x-if="getSelectedTicket().bisa_remote">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold rounded-lg shadow-2xs">
+                                        <i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                        <span>Dapat Diselesaikan secara Online (Remote)</span>
+                                    </span>
+                                </template>
+                                <template x-if="!getSelectedTicket().bisa_remote">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold rounded-lg shadow-2xs">
+                                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-600"></i>
+                                        <span>Penanganan Fisik / On-Site</span>
+                                    </span>
                                 </template>
                             </div>
                         </div>
@@ -303,6 +326,15 @@
                                                 <span class="text-[9px] text-gray-400 font-mono" x-text="c.timestamp"></span>
                                             </div>
                                             <p class="text-xs font-medium text-gray-700 whitespace-pre-wrap" x-text="c.text"></p>
+                                            <template x-if="c.text && (c.text.includes('meet.google.com') || c.text.includes('Google Meet'))">
+                                                <div class="mt-2.5 pt-2 border-t border-slate-200/60">
+                                                    <a :href="extractMeetUrl(c.text)" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                                                        <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                                                        <span>Gabung Sesi Google Meet</span>
+                                                        <i data-lucide="external-link" class="w-3 h-3 ml-0.5 opacity-80"></i>
+                                                    </a>
+                                                </div>
+                                            </template>
                                         </div>
                                     </template>
                                     <div x-show="getSelectedTicket().comments.filter(c => !['sistem', 'terima', 'penugasan', 'mulai_kerjakan', 'penyelesaian', 'eskalasi', 'tindaklanjuti'].includes(c.type)).length === 0" class="text-center py-6 text-gray-400 text-xs font-medium">
@@ -696,6 +728,12 @@
                 if (logBox) {
                     logBox.scrollTop = logBox.scrollHeight;
                 }
+            },
+
+            extractMeetUrl(text) {
+                if (!text) return 'https://meet.google.com/new';
+                const match = text.match(/https?:\/\/meet\.google\.com\/[^\s]+/);
+                return match ? match[0] : 'https://meet.google.com/new';
             }
         };
     }

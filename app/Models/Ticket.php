@@ -35,6 +35,10 @@ class Ticket extends Model
         'catatanKasubbag'
     ];
 
+    protected $casts = [
+        'bisa_remote' => 'boolean',
+    ];
+
     public function pengirim(): BelongsTo
     {
         return $this->belongsTo(User::class, 'pengirimId');

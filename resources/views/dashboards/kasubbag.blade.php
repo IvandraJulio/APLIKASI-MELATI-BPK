@@ -186,7 +186,7 @@
                     </div>
 
                     <!-- Actions -->
-                    <div class="border-t border-gray-100 pt-5 space-y-3.5" x-show="getSelectedTicket().status !== 'Selesai' && getSelectedTicket().status !== 'Kembalikan tiket ke operator'">
+                    <div class="border-t border-gray-100 pt-5 space-y-3.5" x-show="getSelectedTicket().status !== 'Kembalikan tiket ke operator' && (getSelectedTicket().status !== 'Selesai' || canReopen(getSelectedTicket()))">
                         <h4 class="text-xs font-bold text-gray-800 uppercase tracking-wider">Aksi Penanganan Tiket</h4>
                         
                         <div class="flex flex-wrap gap-2.5">
@@ -220,6 +220,14 @@
                                     class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer flex items-center gap-1.5">
                                 <i data-lucide="check-circle" class="w-4 h-4"></i>
                                 Selesaikan Tiket
+                            </button>
+
+                            <!-- Reopen Ticket -->
+                            <button @click="reopenTicket(getSelectedTicket().id)" 
+                                    x-show="canReopen(getSelectedTicket())"
+                                    class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer flex items-center gap-1.5">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                                <span>Buka Kembali Tiket (Reopen)</span>
                             </button>
                         </div>
                     </div>
@@ -599,16 +607,16 @@
             canReopen(t) {
                 if (!t || t.status !== 'Selesai') return false;
                 
-                let completedTime = null;
-                if (t.tanggalSelesai) {
-                    completedTime = new Date(t.tanggalSelesai.replace(' ', 'T')).getTime();
+                let timeStr = t.tanggalSelesai || t.tanggalUpdate || t.created_at;
+                if (!timeStr) return false;
+                
+                let formattedStr = String(timeStr).trim().replace(' ', 'T');
+                if (formattedStr.length <= 10) {
+                    formattedStr += 'T23:59:59';
                 }
-                if (!completedTime || isNaN(completedTime)) {
-                    if (t.tanggalUpdate) {
-                        completedTime = new Date(t.tanggalUpdate.replace(' ', 'T')).getTime();
-                    }
-                }
-                if (!completedTime || isNaN(completedTime)) return false;
+                
+                let completedTime = new Date(formattedStr).getTime();
+                if (isNaN(completedTime)) return false;
 
                 const now = Date.now();
                 const elapsedMs = now - completedTime;
@@ -618,7 +626,8 @@
             },
 
             async reopenTicket(id) {
-                if (!confirm('Apakah Anda yakin ingin membuka kembali tiket ini?')) return;
+                const reason = prompt('Masukkan alasan / catatan membuka kembali tiket ini (opsional):');
+                if (reason === null) return;
                 
                 try {
                     const response = await fetch(`/api/tickets/${id}/actions`, {
@@ -628,14 +637,24 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                         },
                         body: JSON.stringify({
-                            action: 'reopen'
+                            action: 'reopen',
+                            commentText: reason.trim() || 'Pembukaan kembali tiket oleh Kasubbag'
                         })
                     });
 
                     const res = await response.json();
                     if (response.ok && res.success) {
-                        alert('Tiket berhasil dibuka kembali!');
+                        alert('Tiket berhasil dibuka kembali (Reopened)!');
                         await this.fetchTickets();
+                        if (res.status === 'Pending') {
+                            this.activeTab = 'pending';
+                        } else {
+                            this.activeTab = 'aktif';
+                        }
+                        this.selectedId = id;
+                        this.$nextTick(() => {
+                            if (window.lucide) lucide.createIcons();
+                        });
                     } else {
                         alert(res.error || 'Gagal membuka kembali tiket.');
                     }

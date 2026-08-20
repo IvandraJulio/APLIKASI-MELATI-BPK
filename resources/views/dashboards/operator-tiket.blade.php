@@ -527,16 +527,16 @@
             canReopen(t) {
                 if (!t || t.status !== 'Selesai') return false;
                 
-                let completedTime = null;
-                if (t.tanggalSelesai) {
-                    completedTime = new Date(t.tanggalSelesai.replace(' ', 'T')).getTime();
+                let timeStr = t.tanggalSelesai || t.tanggalUpdate || t.created_at;
+                if (!timeStr) return false;
+                
+                let formattedStr = String(timeStr).trim().replace(' ', 'T');
+                if (formattedStr.length <= 10) {
+                    formattedStr += 'T23:59:59';
                 }
-                if (!completedTime || isNaN(completedTime)) {
-                    if (t.tanggalUpdate) {
-                        completedTime = new Date(t.tanggalUpdate.replace(' ', 'T')).getTime();
-                    }
-                }
-                if (!completedTime || isNaN(completedTime)) return false;
+                
+                let completedTime = new Date(formattedStr).getTime();
+                if (isNaN(completedTime)) return false;
 
                 const now = Date.now();
                 const elapsedMs = now - completedTime;

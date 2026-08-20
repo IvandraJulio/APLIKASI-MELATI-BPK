@@ -332,10 +332,17 @@ class DashboardController extends Controller
 
             $completedAt = null;
             if (!empty($ticket->tanggalSelesai)) {
-                $completedAt = strtotime($ticket->tanggalSelesai);
+                $ts = trim($ticket->tanggalSelesai);
+                if (strlen($ts) <= 10) {
+                    $ts = $ts . ' 23:59:59';
+                }
+                $completedAt = strtotime($ts);
             }
-            if (!$completedAt) {
+            if (!$completedAt && !empty($ticket->tanggalUpdate)) {
                 $completedAt = strtotime($ticket->tanggalUpdate);
+            }
+            if (!$completedAt && !empty($ticket->created_at)) {
+                $completedAt = strtotime($ticket->created_at);
             }
 
             if ($completedAt && (time() - $completedAt > 86400)) {
@@ -353,13 +360,15 @@ class DashboardController extends Controller
             $roleDisplay = $userRole === 'pengguna' ? 'Pelapor' : ($userRole === 'kasubbag' ? 'Kasubbag TI' : ($userRole === 'operator' ? 'Operator Biro TI' : 'Solver TI'));
             $roleDisplayLower = $userRole === 'pengguna' ? 'pelapor' : ($userRole === 'kasubbag' ? 'kasubbag' : ($userRole === 'operator' ? 'operator' : 'solver'));
 
+            $reasonText = !empty($request->commentText) ? " Catatan: {$request->commentText}" : (!empty($request->comment['text']) ? " Catatan: {$request->comment['text']}" : "");
+
             Comment::create([
                 'id' => 'cmt-' . microtime(true),
                 'ticketId' => $ticket->id,
                 'authorId' => $user->id,
                 'authorName' => $user->name,
                 'authorRole' => $user->role,
-                'text' => "Tiket dibuka kembali (reopened) oleh {$roleDisplayLower} ({$user->name}).",
+                'text' => "Tiket dibuka kembali (reopened) oleh {$roleDisplayLower} ({$user->name}).{$reasonText}",
                 'timestamp' => $now,
                 'type' => 'tindaklanjuti',
             ]);

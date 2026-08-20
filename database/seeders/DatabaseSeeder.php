@@ -78,7 +78,12 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // 2. Seed Default Tickets
+        // 2. Clear existing ticket, comment, and notification data for clean demo state
+        DB::table('comments')->delete();
+        DB::table('notifications')->delete();
+        DB::table('tickets')->delete();
+
+        // 3. Seed 8 Mock Tickets for Demo Presentation
         $tickets = [
             [
                 'id' => 'TKT-2026-001',
@@ -87,10 +92,11 @@ class DatabaseSeeder extends Seeder
                 'jenis' => 'Insiden',
                 'layananKategori' => 'Layanan Teknologi',
                 'layananSub' => 'Layanan Intranet',
-                'layanan' => 'Penyediaan kabel LAN',
-                'detail' => 'Kabel LAN di ruang kerja lantai 3 Biro TI mengalami kerusakan (terkelupas/retak) sehingga koneksi internet sering terputus-putus secara tiba-tiba.',
-                'tanggal' => '2026-06-25',
-                'tanggalUpdate' => '2026-06-25 09:15',
+                'layanan' => 'Gangguan Koneksi Internet Ruang Kerja',
+                'detail' => 'Koneksi internet di ruang kerja lantai 3 Biro TI sering terputus-putus (RTO). Lampu indikator port switch berkedip merah secara periodik saat digunakan untuk rapat Zoom.',
+                'bisa_remote' => false,
+                'tanggal' => '2026-08-20',
+                'tanggalUpdate' => '2026-08-20 08:00',
                 'tanggalSelesai' => null,
                 'kasubbagId' => 'k1',
                 'kasubbagName' => 'Ir. Hartono, M.T.',
@@ -99,38 +105,86 @@ class DatabaseSeeder extends Seeder
                 'status' => 'Pending',
                 'alasanTolak' => null,
                 'catatanKasubbag' => null,
+                'created_at' => now()->subHours(1),
             ],
             [
                 'id' => 'TKT-2026-002',
-                'pengirimId' => 'u2',
-                'pengirimName' => 'Siti Rahayu',
+                'pengirimId' => 'u1',
+                'pengirimName' => 'Budi Santoso',
                 'jenis' => 'Permintaan',
-                'layananKategori' => 'Layanan Perangkat',
-                'layananSub' => 'Pemeliharaan Perangkat',
-                'layanan' => 'Pemeliharaan Perangkat',
-                'detail' => 'Laptop operasional lambat sekali saat digunakan untuk menjalankan aplikasi audit BPK yang berukuran besar. Layar laptop juga berkedip-kedip saat digerakkan. Butuh pemeriksaan hardware menyeluruh.',
-                'tanggal' => '2026-06-26',
-                'tanggalUpdate' => '2026-06-26 14:30',
+                'layananKategori' => 'Layanan Identitas',
+                'layananSub' => 'Layanan Akun',
+                'layanan' => 'Reset Password & Akses VPN BPK',
+                'detail' => 'Lupa password akun VPN BPK untuk kerja remote dari luar kantor saat dinas lapangan. Mohon bantuan reset password dan konfirmasi akses.',
+                'bisa_remote' => true,
+                'tanggal' => '2026-08-20',
+                'tanggalUpdate' => '2026-08-20 08:15',
                 'tanggalSelesai' => null,
-                'kasubbagId' => 'k2',
-                'kasubbagName' => 'Dra. Wulandari, M.Si.',
+                'kasubbagId' => 'k1',
+                'kasubbagName' => 'Ir. Hartono, M.T.',
                 'solverId' => null,
                 'solverName' => null,
                 'status' => 'Diterima',
                 'alasanTolak' => null,
                 'catatanKasubbag' => null,
+                'created_at' => now()->subMinutes(45),
             ],
             [
-                'id' => 'TKT-2026-OVERDUE-DIRECT',
+                'id' => 'TKT-2026-003',
+                'pengirimId' => 'u1',
+                'pengirimName' => 'Budi Santoso',
+                'jenis' => 'Permintaan',
+                'layananKategori' => 'Layanan Perangkat',
+                'layananSub' => 'Pemeliharaan Perangkat',
+                'layanan' => 'Pemeliharaan Laptop Dinas (Overheat & Slow)',
+                'detail' => 'Laptop HP EliteBook dinas mengalami panas berlebih (overheat), suara kipas kencang, dan performa sangat lambat saat membuka aplikasi audit BPK.',
+                'bisa_remote' => false,
+                'tanggal' => '2026-08-19',
+                'tanggalUpdate' => '2026-08-20 07:30',
+                'tanggalSelesai' => null,
+                'kasubbagId' => 'k1',
+                'kasubbagName' => 'Ir. Hartono, M.T.',
+                'solverId' => 's1_1',
+                'solverName' => 'Supriyadi (Infra Solver 1)',
+                'status' => 'Dikerjakan',
+                'alasanTolak' => null,
+                'catatanKasubbag' => null,
+                'created_at' => now()->subHours(18),
+            ],
+            [
+                'id' => 'TKT-2026-004',
+                'pengirimId' => 'u1',
+                'pengirimName' => 'Budi Santoso',
+                'jenis' => 'Permintaan',
+                'layananKategori' => 'Layanan Server',
+                'layananSub' => 'Pengelolaan Server',
+                'layanan' => 'Permintaan Penambahan Resource VM Audit',
+                'detail' => 'Membutuhkan penambahan vCPU (dari 4 ke 8 core) dan RAM (dari 16GB ke 32GB) pada VM server staging database audit untuk pengujian akhir.',
+                'bisa_remote' => true,
+                'tanggal' => '2026-08-19',
+                'tanggalUpdate' => '2026-08-20 06:45',
+                'tanggalSelesai' => null,
+                'kasubbagId' => 'k1',
+                'kasubbagName' => 'Ir. Hartono, M.T.',
+                'solverId' => null,
+                'solverName' => null,
+                'status' => 'Dieskalasi',
+                'alasanTolak' => null,
+                'catatanKasubbag' => null,
+                'created_at' => now()->subHours(20),
+            ],
+            [
+                'id' => 'TKT-2026-005',
                 'pengirimId' => 'u1',
                 'pengirimName' => 'Budi Santoso',
                 'jenis' => 'Insiden',
                 'layananKategori' => 'Layanan Perangkat',
-                'layananSub' => 'Standarisasi Perangkat Komputer',
-                'layanan' => 'Standarisasi Perangkat Komputer',
-                'detail' => 'Laporan uji coba penanganan overdue langsung.',
-                'tanggal' => date('Y-m-d', strtotime('-2 days')),
-                'tanggalUpdate' => date('Y-m-d H:i', strtotime('-2 days')),
+                'layananSub' => 'Perangkat Jaringan',
+                'layanan' => 'Penggantian Access Point WiFi Lantai 4',
+                'detail' => 'Access Point Wi-Fi Sektor B Lantai 4 mati total. Signal Wi-Fi hilang untuk seluruh pegawai di lantai 4. Tiket pending > 24 jam belum ditindaklanjuti.',
+                'bisa_remote' => false,
+                'tanggal' => '2026-08-18',
+                'tanggalUpdate' => '2026-08-18 09:00',
                 'tanggalSelesai' => null,
                 'kasubbagId' => 'k1',
                 'kasubbagName' => 'Ir. Hartono, M.T.',
@@ -139,215 +193,305 @@ class DatabaseSeeder extends Seeder
                 'status' => 'Overdue',
                 'alasanTolak' => null,
                 'catatanKasubbag' => null,
-                'created_at' => now()->subHours(26),
+                'created_at' => now()->subHours(36),
             ],
             [
-                'id' => 'TKT-2026-OVERDUE-PENDING',
+                'id' => 'TKT-2026-006',
                 'pengirimId' => 'u1',
                 'pengirimName' => 'Budi Santoso',
-                'jenis' => 'Insiden',
-                'layananKategori' => 'Layanan Perangkat',
-                'layananSub' => 'Standarisasi Perangkat Komputer',
-                'layanan' => 'Standarisasi Perangkat Komputer',
-                'detail' => 'Laporan uji coba penandaan overdue otomatis via command. Jalankan php artisan app:escalate-overdue-tickets untuk menguji.',
-                'tanggal' => date('Y-m-d', strtotime('-2 days')),
-                'tanggalUpdate' => date('Y-m-d H:i', strtotime('-2 days')),
+                'jenis' => 'Permintaan',
+                'layananKategori' => 'Layanan Identitas',
+                'layananSub' => 'Layanan Akun',
+                'layanan' => 'Konfigurasi Email BPK di Smartphone',
+                'detail' => 'Sinkronisasi email dinas @bpk.go.id pada aplikasi Outlook Mobile Android terhenti dan muncul error authentication.',
+                'bisa_remote' => true,
+                'tanggal' => '2026-08-20',
+                'tanggalUpdate' => '2026-08-20 06:30',
+                'tanggalSelesai' => '2026-08-20 06:30',
+                'kasubbagId' => 'k1',
+                'kasubbagName' => 'Ir. Hartono, M.T.',
+                'solverId' => 's1_1',
+                'solverName' => 'Supriyadi (Infra Solver 1)',
+                'status' => 'Selesai',
+                'alasanTolak' => null,
+                'catatanKasubbag' => 'Telah dibantu re-konfigurasi IMAP/SMTP port 993 & re-generate app password. Pengujian kirim & terima email sukses.',
+                'created_at' => now()->subHours(3),
+            ],
+            [
+                'id' => 'TKT-2026-007',
+                'pengirimId' => 'u1',
+                'pengirimName' => 'Budi Santoso',
+                'jenis' => 'Permintaan',
+                'layananKategori' => 'Layanan Aplikasi',
+                'layananSub' => 'SIM-P',
+                'layanan' => 'Permintaan Fitur Baru Export Excel Custom',
+                'detail' => 'Permintaan penambahan tombol export khusus data audit ke Excel format XLSB pada modul SIM-P.',
+                'bisa_remote' => false,
+                'tanggal' => '2026-08-19',
+                'tanggalUpdate' => '2026-08-19 11:30',
                 'tanggalSelesai' => null,
                 'kasubbagId' => 'k1',
                 'kasubbagName' => 'Ir. Hartono, M.T.',
                 'solverId' => null,
                 'solverName' => null,
-                'status' => 'Pending',
+                'status' => 'Kembalikan tiket ke operator',
+                'alasanTolak' => 'Salah kategori layanan. Permintaan pengembangan aplikasi SIM-P harusnya ditujukan ke Subbagian Pengembangan Sistem Informasi Pemeriksaan (k3), bukan Subbag Infrastruktur.',
+                'catatanKasubbag' => null,
+                'created_at' => now()->subHours(24),
+            ],
+            [
+                'id' => 'TKT-2026-008',
+                'pengirimId' => 'u1',
+                'pengirimName' => 'Budi Santoso',
+                'jenis' => 'Insiden',
+                'layananKategori' => 'Layanan Aplikasi',
+                'layananSub' => 'Aplikasi Perkantoran',
+                'layanan' => 'Troubleshooting Error Excel Add-in Audit',
+                'detail' => 'Add-in audit BPK pada Excel mengalami crash "Runtime Error 1004" saat mengolah dataset audit berukuran besar (>50MB). Butuh bantuan remote troubleshooting.',
+                'bisa_remote' => true,
+                'tanggal' => '2026-08-20',
+                'tanggalUpdate' => '2026-08-20 07:50',
+                'tanggalSelesai' => null,
+                'kasubbagId' => 'k1',
+                'kasubbagName' => 'Ir. Hartono, M.T.',
+                'solverId' => 's1_1',
+                'solverName' => 'Supriyadi (Infra Solver 1)',
+                'status' => 'Dikerjakan',
                 'alasanTolak' => null,
                 'catatanKasubbag' => null,
-                'created_at' => now()->subHours(26),
+                'created_at' => now()->subHours(2),
             ],
         ];
 
         foreach ($tickets as $ticketData) {
             $created_at = $ticketData['created_at'] ?? now();
             unset($ticketData['created_at']);
-            $t = Ticket::updateOrCreate(['id' => $ticketData['id']], $ticketData);
+            $t = Ticket::create($ticketData);
             $t->created_at = $created_at;
             $t->save();
         }
 
-        // 3. Seed Default Comments
+        // 4. Seed Comments for the Mock Tickets
         $comments = [
+            // TKT-2026-001 (Pending)
             [
                 'id' => 'c1_1',
                 'ticketId' => 'TKT-2026-001',
                 'authorId' => 'u1',
                 'authorName' => 'Budi Santoso',
                 'authorRole' => 'pengguna',
-                'text' => 'Kabel LAN ini sangat penting karena kami sedang menyusun laporan konsolidasi nasional minggu ini.',
-                'timestamp' => '2026-06-25 09:15',
+                'text' => 'Tiket baru berhasil diajukan dengan kategori "Layanan Teknologi" → "Layanan Intranet" → "Gangguan Koneksi Internet Ruang Kerja". Otomatis diteruskan ke Subbagian Pengelolaan Infrastruktur dan Jaringan.',
+                'timestamp' => '2026-08-20 08:00',
+                'type' => 'sistem',
+            ],
+            [
+                'id' => 'c1_2',
+                'ticketId' => 'TKT-2026-001',
+                'authorId' => 'u1',
+                'authorName' => 'Budi Santoso',
+                'authorRole' => 'pengguna',
+                'text' => 'Mohon bantuan penanganan secepatnya Pak Kasubbag, koneksi sangat dibutuhkan untuk menyusun laporan konsolidasi.',
+                'timestamp' => '2026-08-20 08:05',
                 'type' => 'komentar',
             ],
+
+            // TKT-2026-002 (Diterima)
             [
                 'id' => 'c2_1',
                 'ticketId' => 'TKT-2026-002',
-                'authorId' => 'k2',
-                'authorName' => 'Dra. Wulandari, M.Si.',
+                'authorId' => 'u1',
+                'authorName' => 'Budi Santoso',
+                'authorRole' => 'pengguna',
+                'text' => 'Tiket baru diajukan via portal pengguna.',
+                'timestamp' => '2026-08-20 08:10',
+                'type' => 'sistem',
+            ],
+            [
+                'id' => 'c2_2',
+                'ticketId' => 'TKT-2026-002',
+                'authorId' => 'k1',
+                'authorName' => 'Ir. Hartono, M.T.',
                 'authorRole' => 'kasubbag',
-                'text' => 'Tiket diterima.',
-                'timestamp' => '2026-06-26 14:30',
+                'text' => 'Tiket telah diterima oleh Kasubbag Infrastruktur. Silakan solver yang bertugas untuk mengambil dan memproses tiket ini.',
+                'timestamp' => '2026-08-20 08:15',
                 'type' => 'terima',
+            ],
+
+            // TKT-2026-003 (Dikerjakan)
+            [
+                'id' => 'c3_1',
+                'ticketId' => 'TKT-2026-003',
+                'authorId' => 'u1',
+                'authorName' => 'Budi Santoso',
+                'authorRole' => 'pengguna',
+                'text' => 'Tiket diajukan oleh pengguna.',
+                'timestamp' => '2026-08-19 14:00',
+                'type' => 'sistem',
+            ],
+            [
+                'id' => 'c3_2',
+                'ticketId' => 'TKT-2026-003',
+                'authorId' => 'k1',
+                'authorName' => 'Ir. Hartono, M.T.',
+                'authorRole' => 'kasubbag',
+                'text' => 'Tiket ditugaskan kepada solver: Supriyadi (Infra Solver 1).',
+                'timestamp' => '2026-08-19 14:30',
+                'type' => 'penugasan',
+            ],
+            [
+                'id' => 'c3_3',
+                'ticketId' => 'TKT-2026-003',
+                'authorId' => 's1_1',
+                'authorName' => 'Supriyadi (Infra Solver 1)',
+                'authorRole' => 'solver',
+                'text' => 'Tindak Lanjut Solver: Laptop telah diterima di meja kerja TI. Sedang dilakukan pembongkaran casing, pembersihan debu fan, dan penggantian thermal paste.',
+                'timestamp' => '2026-08-20 07:30',
+                'type' => 'tindaklanjuti',
+            ],
+
+            // TKT-2026-004 (Dieskalasi)
+            [
+                'id' => 'c4_1',
+                'ticketId' => 'TKT-2026-004',
+                'authorId' => 'u1',
+                'authorName' => 'Budi Santoso',
+                'authorRole' => 'pengguna',
+                'text' => 'Tiket diajukan oleh pengguna.',
+                'timestamp' => '2026-08-19 10:00',
+                'type' => 'sistem',
+            ],
+            [
+                'id' => 'c4_2',
+                'ticketId' => 'TKT-2026-004',
+                'authorId' => 'k1',
+                'authorName' => 'Ir. Hartono, M.T.',
+                'authorRole' => 'kasubbag',
+                'text' => 'Tiket ditugaskan kepada Supriyadi (Infra Solver 1).',
+                'timestamp' => '2026-08-19 10:15',
+                'type' => 'penugasan',
+            ],
+            [
+                'id' => 'c4_3',
+                'ticketId' => 'TKT-2026-004',
+                'authorId' => 's1_1',
+                'authorName' => 'Supriyadi (Infra Solver 1)',
+                'authorRole' => 'solver',
+                'text' => 'Tiket dieskalasi kembali ke Kasubbag oleh Solver Supriyadi (Infra Solver 1). Alasan: Penambahan quota vCPU dan RAM melebihi ambang batas reguler dan memerlukan otorisasi persetujuan Kasubbag Infrastruktur.',
+                'timestamp' => '2026-08-20 06:45',
+                'type' => 'eskalasi',
+            ],
+
+            // TKT-2026-005 (Overdue)
+            [
+                'id' => 'c5_1',
+                'ticketId' => 'TKT-2026-005',
+                'authorId' => 'u1',
+                'authorName' => 'Budi Santoso',
+                'authorRole' => 'pengguna',
+                'text' => 'Tiket diajukan oleh pengguna.',
+                'timestamp' => '2026-08-18 09:00',
+                'type' => 'sistem',
+            ],
+            [
+                'id' => 'c5_2',
+                'ticketId' => 'TKT-2026-005',
+                'authorId' => 'sistem',
+                'authorName' => 'Sistem Otomatis Escalation',
+                'authorRole' => 'sistem',
+                'text' => 'Tiket otomatis diubah statusnya menjadi Overdue karena belum direspons dalam waktu 24 jam.',
+                'timestamp' => '2026-08-19 09:00',
+                'type' => 'overdue',
+            ],
+
+            // TKT-2026-006 (Selesai)
+            [
+                'id' => 'c6_1',
+                'ticketId' => 'TKT-2026-006',
+                'authorId' => 'u1',
+                'authorName' => 'Budi Santoso',
+                'authorRole' => 'pengguna',
+                'text' => 'Tiket diajukan oleh pengguna.',
+                'timestamp' => '2026-08-20 05:30',
+                'type' => 'sistem',
+            ],
+            [
+                'id' => 'c6_2',
+                'ticketId' => 'TKT-2026-006',
+                'authorId' => 'k1',
+                'authorName' => 'Ir. Hartono, M.T.',
+                'authorRole' => 'kasubbag',
+                'text' => 'Tiket ditugaskan ke Supriyadi.',
+                'timestamp' => '2026-08-20 05:45',
+                'type' => 'penugasan',
+            ],
+            [
+                'id' => 'c6_3',
+                'ticketId' => 'TKT-2026-006',
+                'authorId' => 's1_1',
+                'authorName' => 'Supriyadi (Infra Solver 1)',
+                'authorRole' => 'solver',
+                'text' => 'Tiket telah selesai dikerjakan. Catatan: Telah dibantu re-konfigurasi IMAP/SMTP port 993 & re-generate app password. Pengujian kirim & terima email sukses.',
+                'timestamp' => '2026-08-20 06:30',
+                'type' => 'penyelesaian',
+            ],
+
+            // TKT-2026-007 (Kembalikan tiket ke operator / Ditolak)
+            [
+                'id' => 'c7_1',
+                'ticketId' => 'TKT-2026-007',
+                'authorId' => 'u1',
+                'authorName' => 'Budi Santoso',
+                'authorRole' => 'pengguna',
+                'text' => 'Tiket diajukan oleh pengguna.',
+                'timestamp' => '2026-08-19 09:00',
+                'type' => 'sistem',
+            ],
+            [
+                'id' => 'c7_2',
+                'ticketId' => 'TKT-2026-007',
+                'authorId' => 'k1',
+                'authorName' => 'Ir. Hartono, M.T.',
+                'authorRole' => 'kasubbag',
+                'text' => 'Tiket dikembalikan ke operator. Alasan: Salah kategori layanan. Permintaan pengembangan aplikasi SIM-P harusnya ditujukan ke Subbagian Pengembangan Sistem Informasi Pemeriksaan (k3), bukan Subbag Infrastruktur.',
+                'timestamp' => '2026-08-19 11:30',
+                'type' => 'tolak',
+            ],
+
+            // TKT-2026-008 (Dikerjakan + Google Meet)
+            [
+                'id' => 'c8_1',
+                'ticketId' => 'TKT-2026-008',
+                'authorId' => 'u1',
+                'authorName' => 'Budi Santoso',
+                'authorRole' => 'pengguna',
+                'text' => 'Tiket diajukan oleh pengguna.',
+                'timestamp' => '2026-08-20 07:00',
+                'type' => 'sistem',
+            ],
+            [
+                'id' => 'c8_2',
+                'ticketId' => 'TKT-2026-008',
+                'authorId' => 'k1',
+                'authorName' => 'Ir. Hartono, M.T.',
+                'authorRole' => 'kasubbag',
+                'text' => 'Tiket ditugaskan ke Supriyadi.',
+                'timestamp' => '2026-08-20 07:15',
+                'type' => 'penugasan',
+            ],
+            [
+                'id' => 'c8_3',
+                'ticketId' => 'TKT-2026-008',
+                'authorId' => 's1_1',
+                'authorName' => 'Supriyadi (Infra Solver 1)',
+                'authorRole' => 'solver',
+                'text' => 'Halo Pak Budi, mari kita lakukan remote screen-sharing via Google Meet untuk mengecek error Add-in Excel secara langsung. Silakan bergabung melalui link berikut: https://meet.google.com/abc-defg-hij',
+                'timestamp' => '2026-08-20 07:50',
+                'type' => 'komentar',
             ],
         ];
 
         foreach ($comments as $commentData) {
-            Comment::updateOrCreate(['id' => $commentData['id']], $commentData);
-        }
-
-        // 4. Seed the 50 tickets from seed_50_tickets.sql
-        $seedSqlPath = database_path('seeders/seed_50_tickets.sql');
-        if (File::exists($seedSqlPath)) {
-            $sqlContent = File::get($seedSqlPath);
-            // Remove 'USE db_layanan_ti;'
-            $sqlContent = preg_replace('/USE\s+db_layanan_ti\s*;/i', '', $sqlContent);
-            // Replace double quotes with backticks for MySQL compatibility
-            $sqlContent = str_replace('"', '`', $sqlContent);
-            // Execute the raw query
-            DB::unprepared($sqlContent);
-        }
-
-        // 5. Programmatically generate realistic comments for the newly seeded tickets
-        $tickets = Ticket::where('id', '!=', 'TKT-2026-001')
-            ->where('id', '!=', 'TKT-2026-002')
-            ->get();
-
-        $subbagMaster = [
-            'k1' => 'Subbagian Pengelolaan Infrastruktur dan Jaringan',
-            'k2' => 'Subbagian Pelayanan TIK',
-            'k3' => 'Subbagian Pengembangan Sistem Informasi Pemeriksaan',
-            'k4' => 'Subbagian Pengembangan Sistem Informasi Kelembagaan',
-            'k5' => 'Subbagian Sains Data',
-            'k6' => 'Subbagian Tata Kelola Data',
-            'k7' => 'Subbagian Keamanan Informasi',
-            'k8' => 'Subbagian MIOT',
-            'plti' => 'Pusat Layanan Teknologi Informasi Perwakilan',
-        ];
-
-        foreach ($tickets as $ticket) {
-            $subbagName = $subbagMaster[$ticket->kasubbagId] ?? 'Subbagian Pelayanan TIK';
-            $now = $ticket->tanggalUpdate ?: date('Y-m-d H:i');
-
-            // Time calculations to create a realistic flow of comments
-            $submissionTime = $ticket->tanggal . ' 08:30';
-            if (strtotime($now) < strtotime($submissionTime)) {
-                $submissionTime = date('Y-m-d H:i', strtotime($now) - 3600); // 1 hour before update
-            }
-
-            // 1. Initial System Comment
-            Comment::updateOrCreate(
-                ['id' => 'cmt-sys-' . $ticket->id],
-                [
-                    'ticketId' => $ticket->id,
-                    'authorId' => $ticket->pengirimId,
-                    'authorName' => $ticket->pengirimName,
-                    'authorRole' => 'pengguna',
-                    'text' => "Tiket baru berhasil diajukan dengan kategori \"{$ticket->layananKategori}\" → \"{$ticket->layananSub}\" → \"{$ticket->layanan}\". Otomatis diteruskan ke {$subbagName}.",
-                    'timestamp' => $submissionTime,
-                    'type' => 'sistem',
-                ]
-            );
-
-            // 2. User explanation comment
-            Comment::updateOrCreate(
-                ['id' => 'cmt-user-' . $ticket->id],
-                [
-                    'ticketId' => $ticket->id,
-                    'authorId' => $ticket->pengirimId,
-                    'authorName' => $ticket->pengirimName,
-                    'authorRole' => 'pengguna',
-                    'text' => "Mohon bantuan penanganan secepatnya, ini sangat mendesak untuk tugas kami di lapangan.",
-                    'timestamp' => date('Y-m-d H:i', strtotime($submissionTime) + 300), // 5 mins after submission
-                    'type' => 'komentar',
-                ]
-            );
-
-            // 3. Status-based Comments
-            if (in_array($ticket->status, ['Diterima', 'Ditugaskan', 'Dikerjakan', 'Selesai', 'Kembalikan tiket ke operator'])) {
-                // Kasubbag received it
-                $receiveTime = date('Y-m-d H:i', strtotime($submissionTime) + 1800); // 30 mins after submission
-                Comment::updateOrCreate(
-                    ['id' => 'cmt-rcv-' . $ticket->id],
-                    [
-                        'ticketId' => $ticket->id,
-                        'authorId' => $ticket->kasubbagId,
-                        'authorName' => $ticket->kasubbagName ?: 'Kasubbag',
-                        'authorRole' => 'kasubbag',
-                        'text' => "Tiket diterima, sedang kami periksa kelayakannya.",
-                        'timestamp' => $receiveTime,
-                        'type' => 'terima',
-                    ]
-                );
-
-                if (in_array($ticket->status, ['Ditugaskan', 'Dikerjakan', 'Selesai']) && $ticket->solverId) {
-                    // Kasubbag assigned solver
-                    $assignTime = date('Y-m-d H:i', strtotime($receiveTime) + 1200); // 20 mins after receive
-                    Comment::updateOrCreate(
-                        ['id' => 'cmt-asg-' . $ticket->id],
-                        [
-                            'ticketId' => $ticket->id,
-                            'authorId' => $ticket->kasubbagId,
-                            'authorName' => $ticket->kasubbagName ?: 'Kasubbag',
-                            'authorRole' => 'kasubbag',
-                            'text' => "Tiket ditugaskan kepada solver: {$ticket->solverName}.",
-                            'timestamp' => $assignTime,
-                            'type' => 'penugasan',
-                        ]
-                    );
-
-                    if (in_array($ticket->status, ['Dikerjakan', 'Selesai'])) {
-                        // Solver working comment
-                        $workTime = date('Y-m-d H:i', strtotime($assignTime) + 900); // 15 mins after assign
-                        Comment::updateOrCreate(
-                            ['id' => 'cmt-wrk-' . $ticket->id],
-                            [
-                                'ticketId' => $ticket->id,
-                                'authorId' => $ticket->solverId,
-                                'authorName' => $ticket->solverName,
-                                'authorRole' => 'solver',
-                                'text' => "Baik, laporan saya terima. Sedang saya lakukan pengecekan dan troubleshooting lapangan.",
-                                'timestamp' => $workTime,
-                                'type' => 'komentar',
-                            ]
-                        );
-
-                        if ($ticket->status === 'Selesai') {
-                            // Solver completion comment
-                            Comment::updateOrCreate(
-                                ['id' => 'cmt-fin-' . $ticket->id],
-                                [
-                                    'ticketId' => $ticket->id,
-                                    'authorId' => $ticket->solverId,
-                                    'authorName' => $ticket->solverName,
-                                    'authorRole' => 'solver',
-                                    'text' => "Tiket telah selesai dikerjakan. Catatan penyelesaian: " . ($ticket->catatanKasubbag ?: 'Masalah telah diselesaikan sesuai SOP.'),
-                                    'timestamp' => $ticket->tanggalUpdate ?: date('Y-m-d H:i', strtotime($workTime) + 3600),
-                                    'type' => 'selesai',
-                                ]
-                            );
-                        }
-                    }
-                } elseif ($ticket->status === 'Kembalikan tiket ke operator') {
-                    // Rejected/Returned by Kasubbag
-                    Comment::updateOrCreate(
-                        ['id' => 'cmt-rej-' . $ticket->id],
-                        [
-                            'ticketId' => $ticket->id,
-                            'authorId' => $ticket->kasubbagId,
-                            'authorName' => $ticket->kasubbagName ?: 'Kasubbag',
-                            'authorRole' => 'kasubbag',
-                            'text' => "Tiket dikembalikan ke operator. Alasan: " . ($ticket->alasanTolak ?: 'Kategori tidak sesuai.'),
-                            'timestamp' => $ticket->tanggalUpdate ?: date('Y-m-d H:i', strtotime($receiveTime) + 1800),
-                            'type' => 'tolak',
-                        ]
-                    );
-                }
-            }
+            Comment::create($commentData);
         }
 
         $this->call(ArticleSeeder::class);
